@@ -7,12 +7,14 @@
          shouldBeEnabled = "No"
          ignoreCount = "0"
          continueAfterRunningActions = "No"
-         filePath = "raytracer/utils.h"
-         timestampString = "388498958.564689"
+         filePath = "raytracer/model.cpp"
+         timestampString = "388569790.935956"
          startingColumnNumber = "9223372036854775807"
          endingColumnNumber = "9223372036854775807"
-         startingLineNumber = "16"
-         endingLineNumber = "16">
+         startingLineNumber = "64"
+         endingLineNumber = "64"
+         landmarkName = "AmModel::pass(ifstream &amp;ifs)"
+         landmarkType = "5">
       </FileBreakpoint>
    </FileBreakpoints>
 </Bucket>

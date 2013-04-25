@@ -107,9 +107,11 @@ namespace raytracer {
      * AmModel: class that stores all info of the scene model
      */
     class AmModel {
+        
         string mPathname;
         string mMtllibname;                 // name of the material library
-        
+    
+    public:
         vector<AmTriangle>  mTriangles;     // triangles of the scene
         vector<AmVec3f>     mVertices;
         vector<AmVec3f>     mNormals;       // normals of each triangle
@@ -117,9 +119,10 @@ namespace raytracer {
         vector<AmMaterial>  mMaterials;
         vector<AmGroup>     mGroups;
         
+        AmVec3f             mCenter;        // position of the model center
+        
     public:
         AmModel(string pathname);
-        
 
     private:
         void readOBJ(string filename);
@@ -127,7 +130,10 @@ namespace raytracer {
         unsigned int findMaterial(string name);
         unsigned int findGroup(string name);
         void readMTL();
+        
+        void calc();
     };
+    
 }
 
 

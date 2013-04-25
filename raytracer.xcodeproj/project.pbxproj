@@ -39,6 +39,7 @@
 		1BFDA6001726E33500F3AA70 /* model.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = model.h; sourceTree = "<group>"; };
 		1BFDA6011726E58900F3AA70 /* utils.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = utils.h; sourceTree = "<group>"; };
 		1BFDA6021727B68200F3AA70 /* model.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = model.cpp; sourceTree = "<group>"; };
+		1BFDA6041728FC1300F3AA70 /* obj */ = {isa = PBXFileReference; lastKnownFileType = folder; path = obj; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -75,6 +76,7 @@
 		1BEA5F7C172430C800FDD2F8 /* raytracer */ = {
 			isa = PBXGroup;
 			children = (
+				1BFDA6041728FC1300F3AA70 /* obj */,
 				1BEA5F7D172430C800FDD2F8 /* main.cpp */,
 				1BEA5F8A1724323700FDD2F8 /* gl.h */,
 				1BFDA6001726E33500F3AA70 /* model.h */,

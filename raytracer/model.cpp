@@ -30,10 +30,13 @@ AmModel::AmModel(string filename)
 {
     /* open the file */
     ifstream ifs(filename);
-    assert(ifs.is_open());
+    assert(ifs);
     
     // make a pass through the file to read in the data
     pass(ifs);
+    
+    // calculate the center of the model
+    calc();
 }
 
 /* pass: pass through the Wavefront OBJ file that gets all
@@ -57,6 +60,7 @@ void AmModel::pass(ifstream &ifs)
     mNormals.push_back(AmVec3f(0,0,0));
     numtriangles = 0;
     material = group = 0;
+    
     while(!ifs.eof()) {
         char buf[128];
         ifs.getline(buf, 128);
@@ -329,7 +333,7 @@ void AmModel::readMTL()
     
     // open the file
     ifstream ifs(filename);
-    assert(!ifs);// the file must be opened
+    assert(ifs);// the file must be opened
     
     
     /* now, read in the data */
@@ -384,6 +388,35 @@ void AmModel::readMTL()
                 break;
         }
     }
+
+}
+
+void AmModel::calc()
+{
+    AmVec3f max(M_MIN, M_MIN, M_MIN);
+    AmVec3f min(M_MAX, M_MAX, M_MAX);
+    for (unsigned int i = 1; i < mVertices.size(); i++) {
+        if (mVertices[i].x() > max.x()) {
+            max.setX(mVertices[i].x());
+        }
+        if (mVertices[i].y() > max.y()) {
+            max.setY(mVertices[i].y());
+        }
+        if (mVertices[i].z() > max.z()) {
+            max.setZ(mVertices[i].z());
+        }
+        if (mVertices[i].x() < min.x()) {
+            min.setX(mVertices[i].x());
+        }
+        if (mVertices[i].y() < min.y()) {
+            min.setY(mVertices[i].y());
+        }
+        if (mVertices[i].z() < min.z()) {
+            min.setZ(mVertices[i].z());
+        }
+    }
+    
+    mCenter = (max + min) / 2.0;
 }
 
 

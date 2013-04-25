@@ -9,7 +9,7 @@
 #ifndef raytracer_gl_h
 #define raytracer_gl_h
 
-#include <iostream>
+#include "utils.h"
 
 #if defined(__APPLE__) || defined(MACOSX)
 #include <GLUT/GLUT.h>
@@ -25,6 +25,8 @@ using namespace std;
 
 namespace raytracer
 {
+    class AmModel;
+    
 	class MyOpengl
 	{
 	public:
@@ -32,13 +34,18 @@ namespace raytracer
 		MyOpengl(int, char**, int , int );
 		~MyOpengl();
         
-		void init();
-        
 	private:
 		int mWidth;
 		int mHeight;
         int argc;
         char **argv;
+        
+        void setVal(int argc,  char** argv);
+
+    public:
+        
+		void init();
+        void setModel(const AmModelPtr &model);
         
 	};
     
