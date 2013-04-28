@@ -25,8 +25,9 @@ using namespace std;
 
 namespace raytracer {
 
-    static const float M_MIN = -10000000.0f;
-    static const float M_MAX = 10000000.0f;
+    static const float M_MIN = -10000000.0;
+    static const float M_MAX = 10000000.0;
+    static const float EPSILON = 0.0001;
     
     /*
      * MyVec3f: 3 floats vector
@@ -50,17 +51,17 @@ namespace raytracer {
             return mData;
         }
         
-        float x()
+        float x() const
         {
             return mData[0];
         }
         
-        float y()
+        float y() const
         {
             return mData[1];
         }
         
-        float z()
+        float z() const
         {
             return mData[2];
         }
@@ -80,7 +81,17 @@ namespace raytracer {
             mData[2] = z;
         }
         
-        AmVec3f operator+ (const AmVec3f &rhs)
+        bool orVal(const float rhs) const
+        {
+            return (mData[0] == rhs || mData[1] == rhs || mData[2] == rhs);
+        }
+        
+        bool andVal(const float rhs) const
+        {
+            return (mData[0] == rhs && mData[1] == rhs && mData[2] == rhs);
+        }
+        
+        AmVec3f operator+ (const AmVec3f &rhs) const
         {
             AmVec3f re(rhs);
             re.mData[0] += mData[0];
@@ -89,7 +100,7 @@ namespace raytracer {
             return re;
         }
         
-        AmVec3f operator- (const AmVec3f &rhs)
+        AmVec3f operator- (const AmVec3f &rhs) const
         {
             AmVec3f re(*this);
             re.mData[0] -= rhs.mData[0];
@@ -98,8 +109,9 @@ namespace raytracer {
             return re;
         }
         
-        AmVec3f operator/ (const float rhs)
+        AmVec3f operator/ (const float rhs) const
         {
+            assert(rhs != 0);
             AmVec3f re(*this);
             re.mData[0] /= rhs;
             re.mData[1] /= rhs;
@@ -107,13 +119,63 @@ namespace raytracer {
             return re;
         }
         
-        AmVec3f operator* (const float rhs)
+        AmVec3f operator* (const float rhs) const
         {
             AmVec3f re(*this);
             re.mData[0] *= rhs;
             re.mData[1] *= rhs;
             re.mData[2] *= rhs;
             return re;
+        }
+        
+        AmVec3f operator/ (const AmVec3f &rhs) const
+        {
+            assert(! rhs.orVal(0) );
+            AmVec3f re(*this);
+            re.mData[0] /= rhs.mData[0];
+            re.mData[1] /= rhs.mData[1];
+            re.mData[2] /= rhs.mData[2];
+            return re;
+        }
+        
+        AmVec3f operator* (const AmVec3f &rhs) const
+        {
+            AmVec3f re(*this);
+            re.mData[0] *= rhs.mData[0];
+            re.mData[1] *= rhs.mData[1];
+            re.mData[2] *= rhs.mData[2];
+            return re;
+        }
+        
+        float dot(const AmVec3f &rhs) const
+        {
+            return (mData[0]*rhs.mData[0]
+                    +mData[1]*rhs.mData[1]
+                    +mData[2]*rhs.mData[2]);
+        }
+        
+        AmVec3f cross(const AmVec3f &rhs) const
+        {
+            return AmVec3f(mData[1]*rhs.mData[2]-rhs.mData[1]*mData[2],
+                           mData[2]*rhs.mData[0]-rhs.mData[2]*mData[0],
+                           mData[0]*rhs.mData[1]-rhs.mData[0]*mData[1]);
+        }
+        
+        float det(const AmVec3f &b, const AmVec3f &c) const
+        {
+            float re = x()* b.y()* c.z();
+            re += b.x() * c.y() * z();
+            re += c.x() * y() * b.z();
+            re -= c.x() * b.y() * z();
+            re -= x() * c.y() * b.z();
+            re -= b.x() * y() * c.z();
+            return re;
+        }
+        
+        bool operator == (const AmVec3f &rhs) const
+        {
+            return (mData[0] == rhs.mData[0] && mData[1] == rhs.mData[1]
+                    && mData[2] == rhs.mData[2]);
         }
         
         void normalize()
@@ -124,6 +186,19 @@ namespace raytracer {
             mData[0] /= s;
             mData[1] /= s;
             mData[2] /= s;
+        }
+        
+        void setUpper(float upper)
+        {
+            if (mData[0] > upper) {
+                mData[0] = upper;
+            }
+            if (mData[1] > upper) {
+                mData[1] = upper;
+            }
+            if (mData[2] > upper) {
+                mData[2] = upper;
+            }
         }
     };
     
@@ -164,31 +239,17 @@ namespace raytracer {
         }
     };
     
-    class AmCamera
-    {
-    public:
-        AmVec3f eye;
-        AmVec3f center;
-        AmVec3f up;
-        
-        AmVec3f dir;
-        
-        AmCamera(const AmVec3f &e, const AmVec3f &c, const AmVec3f &u)
-            :eye(e), center(c), up(u)
-        {
-            update();
-        }
-        
-        void update()
-        {
-            dir = center - eye;
-            dir.normalize();
-        }
-    };
+    
     
     class AmModel;
+    class AmCamera;
+    class AmLight;
     typedef shared_ptr<AmModel> AmModelPtr;
     typedef shared_ptr<AmCamera> AmCameraPtr;
+    typedef shared_ptr<AmLight> AmLightPtr;
+    
+    typedef shared_ptr<float> AmFloatPtr;
+    typedef shared_ptr<unsigned int> AmUintPtr;
 }
 
 

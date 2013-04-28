@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1BAD6021172A34BA00429A88 /* raytracer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1BAD6020172A34BA00429A88 /* raytracer.cpp */; };
 		1BEA5F7E172430C800FDD2F8 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1BEA5F7D172430C800FDD2F8 /* main.cpp */; };
 		1BEA5F80172430C800FDD2F8 /* raytracer.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 1BEA5F7F172430C800FDD2F8 /* raytracer.1 */; };
 		1BEA5F871724319D00FDD2F8 /* GLUT.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1BEA5F861724319D00FDD2F8 /* GLUT.framework */; };
@@ -29,6 +30,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		1BAD601F172A311500429A88 /* raytracer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = raytracer.h; sourceTree = "<group>"; };
+		1BAD6020172A34BA00429A88 /* raytracer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = raytracer.cpp; sourceTree = "<group>"; };
 		1BEA5F7A172430C800FDD2F8 /* raytracer */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = raytracer; sourceTree = BUILT_PRODUCTS_DIR; };
 		1BEA5F7D172430C800FDD2F8 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		1BEA5F7F172430C800FDD2F8 /* raytracer.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = raytracer.1; sourceTree = "<group>"; };
@@ -79,10 +82,12 @@
 				1BFDA6041728FC1300F3AA70 /* obj */,
 				1BEA5F7D172430C800FDD2F8 /* main.cpp */,
 				1BEA5F8A1724323700FDD2F8 /* gl.h */,
+				1BEA5F8B1724326500FDD2F8 /* gl.cpp */,
 				1BFDA6001726E33500F3AA70 /* model.h */,
 				1BFDA6021727B68200F3AA70 /* model.cpp */,
 				1BFDA6011726E58900F3AA70 /* utils.h */,
-				1BEA5F8B1724326500FDD2F8 /* gl.cpp */,
+				1BAD601F172A311500429A88 /* raytracer.h */,
+				1BAD6020172A34BA00429A88 /* raytracer.cpp */,
 				1BEA5F7F172430C800FDD2F8 /* raytracer.1 */,
 			);
 			path = raytracer;
@@ -143,6 +148,7 @@
 				1BEA5F8C1724326500FDD2F8 /* gl.cpp in Sources */,
 				1BEA5F7E172430C800FDD2F8 /* main.cpp in Sources */,
 				1BFDA6031727B68200F3AA70 /* model.cpp in Sources */,
+				1BAD6021172A34BA00429A88 /* raytracer.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -13,6 +13,8 @@
 
 using namespace raytracer;
 
+#define AM_DEBUGGING     // if not debugging, comment this out
+
 int main(int argc, char * argv[])
 {
     string path;
@@ -29,6 +31,7 @@ int main(int argc, char * argv[])
     MyOpengl mygl(argc, argv);
     
     AmModelPtr model(new AmModel(path));
+    model->utilize();
     mygl.setModel(model);
 	mygl.init();
     return 0;

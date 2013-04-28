@@ -34,9 +34,6 @@ AmModel::AmModel(string filename)
     
     // make a pass through the file to read in the data
     pass(ifs);
-    
-    // calculate the center of the model
-    calc();
 }
 
 /* pass: pass through the Wavefront OBJ file that gets all
@@ -114,7 +111,7 @@ void AmModel::pass(ifstream &ifs)
             {
                 int v, n, t;
                 v = n = t = 0;
-                AmTriangle triangle;
+                AmTriangle triangle(group);
                 sreader>>first>>remain;
                 /* can be one of %d, %d//%d, %d/%d, %d/%d/%d */
                 if (sscanf(remain.c_str(), "%d//%d", &v, &n) == 2) {
@@ -140,7 +137,7 @@ void AmModel::pass(ifstream &ifs)
                     numtriangles++;
                     assert(mTriangles.size() == numtriangles);//check count
                     while(sreader>>remain) {
-                        AmTriangle nextTri;
+                        AmTriangle nextTri(group);
                         sscanf(remain.c_str(), "%d//%d", &v, &n);
                         assert(v>0);assert(n>0);//do not accept negative indices
                         nextTri.vindices[0] = triangle.vindices[0];
@@ -184,7 +181,7 @@ void AmModel::pass(ifstream &ifs)
                     numtriangles++;
                     assert(mTriangles.size() == numtriangles);//check count
                     while(sreader>>remain) {
-                        AmTriangle nextTri;
+                        AmTriangle nextTri(group);
                         sscanf(remain.c_str(), "%d/%d/%d", &v, &t, &n);
                         //do not accept negative indices
                         assert(v>0);assert(t>0);assert(n>0);
@@ -227,7 +224,7 @@ void AmModel::pass(ifstream &ifs)
                     numtriangles++;
                     assert(mTriangles.size() == numtriangles);//check count
                     while(sreader>>remain) {
-                        AmTriangle nextTri;
+                        AmTriangle nextTri(group);
                         sscanf(remain.c_str(), "%d/%d", &v, &t);
                         assert(v>0);assert(t>0);//do not accept negative indices
                         nextTri.vindices[0] = triangle.vindices[0];
@@ -264,7 +261,7 @@ void AmModel::pass(ifstream &ifs)
                     numtriangles++;
                     assert(mTriangles.size() == numtriangles);//check count
                     while(sreader>>remain) {
-                        AmTriangle nextTri;
+                        AmTriangle nextTri(group);
                         sscanf(remain.c_str(), "%d", &v);
                         assert(v>0);//do not accept negative indices
                         nextTri.vindices[0] = triangle.vindices[0];
@@ -337,8 +334,10 @@ void AmModel::readMTL()
     
     
     /* now, read in the data */
-    mMaterials.push_back(AmMaterial());
-    int material = 0; //current material index
+    if (mMaterials.size() == 0) {
+        mMaterials.push_back(AmMaterial());//first one of blank material
+    }
+    unsigned long material = mMaterials.size()-1; //current material index
     while(!ifs.eof()) {
         char buf[128];
         ifs.getline(buf, 128);
@@ -352,11 +351,33 @@ void AmModel::readMTL()
                 mMaterials.push_back(AmMaterial(remain));
                 material++;
                 break;
-            case 'N':
-                sreader>>first>>mMaterials[material].shininess;
-                /* wavefront shininess is from [0, 1000], so scale for OpenGL */
-                mMaterials[material].shininess *= 128.0 / 1000.0;
+            case 'd':
+                // transperancy
+                sreader>>first>>mMaterials[material].transperancy;
                 break;
+            case 'T':
+                // transperancy
+                sreader>>first>>mMaterials[material].transperancy;
+                break;
+            case 'N':
+            {
+                switch (buf[1]) {
+                    case 's':
+                        // shininess
+                        sreader>>first>>mMaterials[material].shininess;
+                        // wavefront shininess is from [0, 1000], so scale for OpenGL */
+                        mMaterials[material].shininess *= 128.0 / 1000.0;
+                        break;
+                    case 'i':
+                        // density
+                        sreader>>first>>mMaterials[material].density;
+                        break;
+                    default:
+                        break;
+                }
+                
+                break;
+            }
             case 'i':               /* illum */
                 sreader>>first>>mMaterials[material].illum;
                 break;
@@ -391,32 +412,87 @@ void AmModel::readMTL()
 
 }
 
-void AmModel::calc()
+// utilize the model:
+//  scale and translate the model to the unit cube around the origin,
+//  and calculate the normal direction vector of each triangle.
+//  Assumes a counter-clockwise winding.
+void AmModel::utilize()
 {
-    AmVec3f max(M_MIN, M_MIN, M_MIN);
-    AmVec3f min(M_MAX, M_MAX, M_MAX);
+    AmVec3f vmax(M_MIN, M_MIN, M_MIN);
+    AmVec3f vmin(M_MAX, M_MAX, M_MAX);
     for (unsigned int i = 1; i < mVertices.size(); i++) {
-        if (mVertices[i].x() > max.x()) {
-            max.setX(mVertices[i].x());
+        if (mVertices[i].x() > vmax.x()) {
+            vmax.setX(mVertices[i].x());
         }
-        if (mVertices[i].y() > max.y()) {
-            max.setY(mVertices[i].y());
+        if (mVertices[i].y() > vmax.y()) {
+            vmax.setY(mVertices[i].y());
         }
-        if (mVertices[i].z() > max.z()) {
-            max.setZ(mVertices[i].z());
+        if (mVertices[i].z() > vmax.z()) {
+            vmax.setZ(mVertices[i].z());
         }
-        if (mVertices[i].x() < min.x()) {
-            min.setX(mVertices[i].x());
+        if (mVertices[i].x() < vmin.x()) {
+            vmin.setX(mVertices[i].x());
         }
-        if (mVertices[i].y() < min.y()) {
-            min.setY(mVertices[i].y());
+        if (mVertices[i].y() < vmin.y()) {
+            vmin.setY(mVertices[i].y());
         }
-        if (mVertices[i].z() < min.z()) {
-            min.setZ(mVertices[i].z());
+        if (mVertices[i].z() < vmin.z()) {
+            vmin.setZ(mVertices[i].z());
         }
     }
     
-    mCenter = (max + min) / 2.0;
+    // the width, height and depth of the model
+    float w = abs(vmax.x()) + abs(vmin.x());
+    float h = abs(vmax.y()) + abs(vmin.y());
+    float d = abs(vmax.z()) + abs(vmin.z());
+    
+    // the center of the model
+    float cx = (vmax.x() + vmin.x()) / 2;
+    float cy = (vmax.y() + vmin.y()) / 2;
+    float cz = (vmax.z() + vmin.z()) / 2;
+    
+    // scale and translate the model
+    float scale = 2.0 / max(max(w, h), d);
+    for (unsigned int i = 0; i < mVertices.size(); i++) {
+        mVertices[i].mData[0] -= cx;
+        mVertices[i].mData[1] -= cy;
+        mVertices[i].mData[2] -= cz;
+        mVertices[i].mData[0] *= scale;
+        mVertices[i].mData[1] *= scale;
+        mVertices[i].mData[2] *= scale;
+    }
+    
+    // get the normals of triangles
+    mTriNorms.clear();
+    for (unsigned int i = 0; i < mTriangles.size(); i++) {
+        
+        AmVec3f u = mVertices[mTriangles[i].nindices[1]]
+                    - mVertices[mTriangles[i].nindices[0]];
+        AmVec3f v = mVertices[mTriangles[i].nindices[2]]
+                    - mVertices[mTriangles[i].nindices[1]];
+        mTriNorms.push_back(u.cross(v));
+        mTriNorms[i].normalize();
+    }
+}
+
+
+//////Camera Class///////////
+void AmCamera::update()
+{
+    dir = center - eye;
+    float dis = sqrt(dir.dot(dir)); //distance
+    dir.normalize();
+    
+    float scale = tan(angle / 2.0) * dis * 2.0 / width;
+    vecx = dir.cross(up);
+    vecx.normalize();
+    vecx = vecx * scale;
+    vecy = vecx.cross(dir);
+    vecy.normalize();
+    vecy = vecy * scale;
+    
+    // from center to the base of the coordinate
+    base = center - (vecx * width / 2) - (vecy * height / 2);
 }
 
 

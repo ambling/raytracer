@@ -19,6 +19,7 @@ namespace raytracer
     bool myDraw;
     AmModelPtr model;
     AmCameraPtr camera;
+    vector<AmLightPtr> lights;
     
     void idle(void);
     void display(void);
@@ -48,7 +49,17 @@ namespace raytracer
         AmVec3f eye(0,0,0);
         AmVec3f center(0,0,-1);
         AmVec3f up(0,1,0);
-        camera = AmCameraPtr(new AmCamera(eye, center, up));
+        camera = AmCameraPtr(new AmCamera(mWidth, mHeight, eye, center, up));
+        
+        
+        float light_position[] = { 1.0, 0.0, 0.0, 0.0 };
+        float light_ambient[] = { 0.2, 0.2, 0.2, 1.0 };
+        lights.push_back(AmLightPtr(new AmLight(
+                            AmLight::AM_POSITION,
+                            AmLight::AM_LIGHT0, light_position)));
+        lights.push_back(AmLightPtr(new AmLight(
+                            AmLight::AM_AMBIENT,
+                            AmLight::AM_LIGHT1, light_ambient)));
     }
     
 	void MyOpengl::init()
@@ -77,6 +88,7 @@ namespace raytracer
     
     void openglDraw()
     {
+        glEnable(GL_DEPTH_TEST);
         glEnable(GL_COLOR_MATERIAL);
         
         for (int group = 0; group < model->mGroups.size(); group++) {
@@ -121,7 +133,7 @@ namespace raytracer
     
     void display(void)
     {
-        glClearColor(0.2, 0.2, 0.2, 1.0);
+        glClearColor(0.2, 0.2, 0.2, 1.0); //black is not comfortable
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
         int width = glutGet(GLUT_WINDOW_WIDTH);
@@ -131,7 +143,8 @@ namespace raytracer
         glMatrixMode( GL_PROJECTION);
         glLoadIdentity();
         
-        //glOrtho(-width / 2.0, width / 2.0, -height / 2.0, height / 2.0, -10, 10000);
+        //glOrtho(-width / 2.0, width / 2.0, -height / 2.0, height / 2.0,
+        //          -10, 10000);
         glFrustum(-width / 2.0, width / 2.0, -height / 2.0, height / 2.0, 10.0,
                   -200.0);
         
@@ -141,13 +154,16 @@ namespace raytracer
                   camera->up.x(), camera->up.y(), camera->up.z());
         
         // enable the light
-        //glEnable ( GL_LIGHTING ) ;
+        glEnable(GL_LIGHTING);
+        for (int i = 0; i < lights.size(); i++) {
+            glLightfv(lights[i]->name, lights[i]->type, lights[i]->value);
+            glEnable(lights[i]->name);
+        }
         
         if (myDraw) {
             // use the raytracer functions of the model
         } else {
             // call the openGL functions to draw the scene
-            
             openglDraw();
         }
         
@@ -170,8 +186,8 @@ namespace raytracer
             myDraw = !myDraw;
         }
         
-        float step = 1;
-        float angle = 20.0 * M_PI / 180.0;
+        float step = 0.1;
+//        float angle = 20.0 * M_PI / 180.0;
         if (key == 'w')
         {// move forward
             AmVec3f move = camera->dir * step;
