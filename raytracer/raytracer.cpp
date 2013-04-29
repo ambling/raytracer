@@ -57,7 +57,8 @@ AmVec3f AmRayTracer::rayTracing(const AmRay &ray, const int depth)
     int minMesh = -1;
     
     //get the nearest hit point of the ray and the model
-    float hit = getHitPoint(ray, minMesh);
+    //float hit = getHitPoint(ray, minMesh);
+    float hit = kdtree.search(ray, minMesh);
     
     if (hit > EPSILON) {
         /* get the intersection, calculate the color
@@ -96,29 +97,29 @@ AmVec3f AmRayTracer::rayTracing(const AmRay &ray, const int depth)
             color = color + getDiffColor(shadowRays[i], minMesh, material);
             color = color + getReflColor(ray, shadowRays[i], minMesh, material);
         }
-//
-//        // generate tracing ray for reflection and refraction
-//        AmVec3f pos = ray.orig + (ray.dir * hit);
-//        if (material->illum >= 3 && material->illum <= 7) {
-//            AmVec3f refl = getReflRayDir(ray.dir*(-1.0), model->mTriNorms[minMesh]);
-//            color = color + rayTracing(AmRay(pos, refl), depth-1);
-//        }
-//        
-//        if (material->transperancy < 1 && material->density != 0) {
-//            // need refraction
-//            color.setUpper(1.0);
-//            color = color * material->transperancy;
-//            
-//            if (material->illum >= 6 && material->illum <= 7) {
-//                // move front a little
-//                pos = pos + ray.dir * 2 * EPSILON;
-//                AmVec3f refr = getRefrRayDir(ray.dir,
-//                                        model->mTriNorms[minMesh], material);
-//                color = color + (rayTracing(AmRay(pos, refr), depth-1)
-//                                 * (1-material->transperancy));
-//            }
-//            
-//        }
+
+        // generate tracing ray for reflection and refraction
+        AmVec3f pos = ray.orig + (ray.dir * hit);
+        if (material->illum >= 3 && material->illum <= 7) {
+            AmVec3f refl = getReflRayDir(ray.dir*(-1.0), model->mTriNorms[minMesh]);
+            color = color + rayTracing(AmRay(pos, refl), depth-1);
+        }
+        
+        if (material->transperancy < 1 && material->density != 0) {
+            // need refraction
+            color.setUpper(1.0);
+            color = color * material->transperancy;
+            
+            if (material->illum >= 6 && material->illum <= 7) {
+                // move front a little
+                pos = pos + ray.dir * 2 * EPSILON;
+                AmVec3f refr = getRefrRayDir(ray.dir,
+                                        model->mTriNorms[minMesh], material);
+                color = color + (rayTracing(AmRay(pos, refr), depth-1)
+                                 * (1-material->transperancy));
+            }
+            
+        }
         
         //color clipped to [0, 1.0]
         color.setUpper(1.0);
@@ -251,7 +252,8 @@ void AmRayTracer::shadowRay(const float hit, const int index,
         AmRay ray(pos, dir);
         
         int hitMesh = -1;
-        float hitAgain = getHitPoint(ray, hitMesh);
+        //float hitAgain = getHitPoint(ray, hitMesh);//use kdtree instead
+        float hitAgain = kdtree.search(ray, hitMesh);
         if (hitMesh != index && hitAgain > EPSILON && hitAgain < dis) {
             // hit another mesh
             continue;
@@ -286,3 +288,493 @@ float AmRayTracer::hitMesh(const AmRay &ray, const AmVec3f &a,
 }
 
 
+////////////// functions of kd-tree /////////////////////
+
+// init the root node of kd-tree and call to build the whole tree
+void AmKDTree::init()
+{
+    //clear exist data
+    nodes.clear();
+    
+    AmKDTreeNodePtr root(new AmKDTreeNode);
+    for (unsigned int i = 1; i < model->mTriangles.size(); i++) {
+        // start from index 1
+        root->meshes.push_back(i);
+    }
+    
+    AmVec3f vmax(M_MIN, M_MIN, M_MIN);
+    AmVec3f vmin(M_MAX, M_MAX, M_MAX);
+    for (unsigned int i = 1; i < model->mVertices.size(); i++) {
+        if (model->mVertices[i].x() > vmax.x()) {
+            vmax.setX(model->mVertices[i].x());
+        }
+        if (model->mVertices[i].y() > vmax.y()) {
+            vmax.setY(model->mVertices[i].y());
+        }
+        if (model->mVertices[i].z() > vmax.z()) {
+            vmax.setZ(model->mVertices[i].z());
+        }
+        if (model->mVertices[i].x() < vmin.x()) {
+            vmin.setX(model->mVertices[i].x());
+        }
+        if (model->mVertices[i].y() < vmin.y()) {
+            vmin.setY(model->mVertices[i].y());
+        }
+        if (model->mVertices[i].z() < vmin.z()) {
+            vmin.setZ(model->mVertices[i].z());
+        }
+    }
+    root->start = vmin;
+    root->end = vmax;
+    
+    nodes.push_back(root);
+    buildNode(0);
+}
+
+// depth-first search to build the tree
+void AmKDTree::buildNode(int index)
+{
+    while (index != -1) {
+        if (terminate(index)) {
+            nodes[index]->leaf = true;
+        } else {
+            splitNode(index);
+        }
+        
+        if (nodes[index]->leftChild != -1) {
+            index = nodes[index]->leftChild;
+            continue;
+        } else if (nodes[index]->sibling != -1) {
+            index = nodes[index]->sibling;
+            continue;
+        } else {
+            while (nodes[index]->parent != -1) {
+                index = nodes[index]->parent;
+                if (nodes[index]->sibling != -1) {
+                    index = nodes[index]->sibling;
+                    break;
+                }
+            }
+            if (nodes[index]->parent == -1) {
+                index = -1;
+            }
+        }
+    }
+}
+
+// check if need to terminate the splittion
+bool AmKDTree::terminate(int index)
+{
+    if(nodes[index]->depth == 16)
+	{// maximum depth of 16
+		return true;
+	}
+	if(nodes[index]->meshes.size() <= 5)
+    {// the number of meshes in the node is small enough
+		return true;
+	}
+    return false;
+}
+
+
+// split the node
+void AmKDTree::splitNode(int index)
+{
+    //first choose the plane to split
+    findPlane(index);
+    
+    //get the index of the children
+    nodes[index]->leftChild = static_cast<int>(nodes.size());
+    nodes.push_back(AmKDTreeNodePtr(new AmKDTreeNode));
+    nodes[index]->rightChild = static_cast<int>(nodes.size());
+    nodes.push_back(AmKDTreeNodePtr(new AmKDTreeNode));
+    
+    AmKDTreeNodePtr thenode = nodes[index];
+    AmKDTreeNodePtr left = nodes[thenode->leftChild];
+    AmKDTreeNodePtr right = nodes[thenode->rightChild];
+    
+    left->sibling = thenode->rightChild;
+    left->parent = right->parent = index;
+    left->depth = right->depth = thenode->depth + 1;
+	
+	left->start = thenode->start;
+    left->end = thenode->end;
+    right->start = thenode->start;
+    right->end = thenode->end;
+	if(thenode->plane.axis == AmPlane::AM_X)
+	{
+        left->end.mData[0] = right->start.mData[0] = thenode->plane.value;
+	} else if(thenode->plane.axis == AmPlane::AM_Y)
+	{
+        left->end.mData[1] = right->start.mData[1] = thenode->plane.value;
+	} else {
+        left->end.mData[2] = right->start.mData[2] = thenode->plane.value;
+	}
+    
+	// split the triangles
+	for(int i = 0; i < thenode->meshes.size(); i++)
+	{// check the triangles in parent node
+		int parentMesh = thenode->meshes[i];
+        
+		int position = meshInNode(parentMesh, thenode);
+		if(position <= 0)
+		{// in left child
+			left->meshes.push_back(parentMesh);
+		}
+        if (position >= 0)
+        {// in right child
+			right->meshes.push_back(parentMesh);
+		}
+	}
+}
+
+// find the plane to split the node
+//  first check if blank space is too large in one axis,
+//  if not, choose the axis of the largest span to split
+void AmKDTree::findPlane(int index)
+{
+    AmVec3f vmax(M_MIN, M_MIN, M_MIN);
+    AmVec3f vmin(M_MAX, M_MAX, M_MAX);
+    for (unsigned int i = 0; i < nodes[index]->meshes.size(); i++) {
+        AmVec3f start = model->mTriangles[nodes[index]->meshes[i]].start;
+        AmVec3f end = model->mTriangles[nodes[index]->meshes[i]].end;
+        if (end.x() > vmax.x()) {
+            vmax.setX(end.x());
+        }
+        if (end.y() > vmax.y()) {
+            vmax.setY(end.y());
+        }
+        if (end.z() > vmax.z()) {
+            vmax.setZ(end.z());
+        }
+        if (start.x() < vmin.x()) {
+            vmin.setX(start.x());
+        }
+        if (start.y() < vmin.y()) {
+            vmin.setY(start.y());
+        }
+        if (start.z() < vmin.z()) {
+            vmin.setZ(start.z());
+        }
+    }
+    float xspan = nodes[index]->end.x() - nodes[index]->start.x();
+	if((vmin.x() - nodes[index]->start.x()) / xspan > 0.25)
+	{// blank space of x axis from start is too much
+		nodes[index]->plane.axis = AmPlane::AM_X;
+		nodes[index]->plane.value = vmin.x();
+		return;
+	} else if((nodes[index]->end.x() - vmax.x()) / xspan > 0.25)
+	{// blank space of x axis from end is too much
+		nodes[index]->plane.axis = AmPlane::AM_X;
+		nodes[index]->plane.value = vmax.x();
+		return;
+	}
+    
+	float yspan = nodes[index]->end.y() - nodes[index]->start.y();
+	if((vmin.y() - nodes[index]->start.y()) / xspan > 0.25)
+	{// blank space of y axis from start is too much
+		nodes[index]->plane.axis = AmPlane::AM_Y;
+		nodes[index]->plane.value = vmin.y();
+		return;
+	} else if((nodes[index]->end.y() - vmax.y()) / yspan > 0.25)
+	{// blank space of y axis from end is too much
+		nodes[index]->plane.axis = AmPlane::AM_Y;
+		nodes[index]->plane.value = vmax.y();
+		return;
+	}
+    
+	float zspan = nodes[index]->end.z() - nodes[index]->start.z();
+	if((vmin.z() - nodes[index]->start.z()) / zspan > 0.25)
+	{// blank space of z axis from start is too much
+		nodes[index]->plane.axis = AmPlane::AM_Z;
+		nodes[index]->plane.value = vmin.z();
+		return;
+	} else if((nodes[index]->end.z() - vmax.z()) / zspan > 0.25)
+	{// blank space of z axis from end is too much
+		nodes[index]->plane.axis = AmPlane::AM_Z;
+		nodes[index]->plane.value = vmax.z();
+		return;
+	}
+    
+	// find the spacial median of the longest axis
+	if(xspan > yspan)
+	{
+		if(xspan > zspan)
+			nodes[index]->plane.axis = AmPlane::AM_X;
+		else
+			nodes[index]->plane.axis = AmPlane::AM_Z;
+	} else {
+		if(yspan > zspan)
+			nodes[index]->plane.axis = AmPlane::AM_Y;
+		else
+			nodes[index]->plane.axis = AmPlane::AM_Z;
+	}
+    
+	if(nodes[index]->plane.axis == AmPlane::AM_X)
+		nodes[index]->plane.value =
+            (nodes[index]->start.x() + nodes[index]->end.x()) * 0.5;
+	else if(nodes[index]->plane.axis == AmPlane::AM_Y)
+		nodes[index]->plane.value =
+            (nodes[index]->start.y() + nodes[index]->end.y()) * 0.5;
+	else
+		nodes[index]->plane.value =
+            (nodes[index]->start.z() + nodes[index]->end.z()) * 0.5;
+}
+
+// check what node the mesh is in
+// return -1 means left, 1 means right and 0 means both
+int AmKDTree::meshInNode(int mesh, const AmKDTreeNodePtr &node)
+{
+    float value = node->plane.value;
+    AmTriangle* m = &model->mTriangles[mesh];
+	if(node->plane.axis == AmPlane::AM_X)
+    {
+		if(m->end.x() < value-EPSILON)
+			return -1;
+		else if(m->start.x() > value+EPSILON)
+			return 1;
+		else
+			return 0;
+	} else if(node->plane.axis == AmPlane::AM_Y)
+	{
+		if(m->end.y() < value-EPSILON)
+			return -1;
+		else if(m->start.y() > value+EPSILON)
+			return 1;
+		else
+			return 0;
+	} else {
+		if(m->end.z() < value-EPSILON)
+			return -1;
+		else if(m->start.z() > value+EPSILON)
+			return 1;
+		else
+			return 0;
+	}
+}
+
+
+
+///// kd-tree traversal ///////
+
+// search for intersection
+float AmKDTree::search(const AmRay &ray, int &index)
+{
+    float hit = -1;
+    index = -1;
+    
+    // check the box intersection
+	float tmin, tmax;
+	if(!hitBox(0, ray, tmin, tmax))
+		return hit;
+    
+    
+	vector<int> stack;
+    vector<float> tstack;
+    int node = 0;
+	while(1)
+	{
+		if(nodes[node]->leaf)
+		{// hit the leaf
+			if(searchLeaf(node, ray, index, hit))
+				return hit;
+			else if(stack.size() > 0)
+			{//push node from stack
+				node = stack.back();stack.pop_back();
+                tmax = tstack.back();tstack.pop_back();
+                tmin = tstack.back();tstack.pop_back();
+			}
+			else
+				return hit;
+		} else {
+			float tHit;
+            
+			int first, second;  // the order of hit children
+            AmPlane::AmAxis axis = nodes[node]->plane.axis;
+            
+			if(axis == AmPlane::AM_X)
+			{
+				tHit = (nodes[node]->plane.value - ray.orig.x()) / ray.dir.x();
+				if(ray.dir.x() > 0)
+				{
+					first = nodes[node]->leftChild;
+					second = nodes[node]->rightChild;
+				} else {
+					second = nodes[node]->leftChild;
+					first = nodes[node]->rightChild;
+				}
+			} else if(axis == AmPlane::AM_Y)
+			{
+				tHit = (nodes[node]->plane.value - ray.orig.y()) / ray.dir.y();
+				if(ray.dir.y() > 0)
+				{
+					first = nodes[node]->leftChild;
+					second = nodes[node]->rightChild;
+				} else {
+					second = nodes[node]->leftChild;
+					first = nodes[node]->rightChild;
+				}
+			} else {
+				tHit = (nodes[node]->plane.value - ray.orig.z()) / ray.dir.z();
+				if(ray.dir.z() > 0)
+				{
+					first = nodes[node]->leftChild;
+					second = nodes[node]->rightChild;
+				}
+				else
+				{
+					second = nodes[node]->leftChild;
+					first = nodes[node]->rightChild;
+				}
+			}
+            
+			if(tHit > tmax+EPSILON)
+				node = first;
+			else if(tHit < tmin-EPSILON) //including the condition that tHit<0
+				node = second;
+			else
+			{ // through both children, push the second to stack
+                stack.push_back(second);
+                tstack.push_back(tHit);
+                tstack.push_back(tmax);
+				tmax = tHit;
+				node = first;
+			}
+		}
+	}
+	return hit;
+}
+
+
+// check if the ray hit the node
+bool AmKDTree::hitBox(int index, const AmRay &ray, float &tmin, float &tmax)
+{
+    AmKDTreeNodePtr thenode = nodes[index];
+    int init = 0;  //indicate whether tmin and tmax has been initialized
+    
+	// begin to check x axis
+	if(abs(ray.dir.x()) < EPSILON)
+	{// parallel to x axis
+		if(ray.orig.x() < thenode->start.x()
+           || ray.orig.x() > thenode->end.x())
+			return false;		//no intersection
+	} else {
+		float t1 = (thenode->start.x() - ray.orig.x()) / ray.dir.x();
+		float t2 = (thenode->end.x() - ray.orig.x()) / ray.dir.x();
+		
+		if(t1 > t2)
+		{// swap
+			float t = t1;
+			t1 = t2;
+			t2 = t;
+		}
+		
+		if(t2 < 0)
+			return false;	// the box is behind
+		
+		tmin = t1;
+		tmax = t2;
+		init = 1;
+	}
+	
+	// begin to check y axis
+	if(abs(ray.dir.y()) < EPSILON)
+	{// parallel to y axis
+		if(ray.orig.y() < thenode->start.y()
+           || ray.orig.y() > thenode->end.y())
+			return false;		//no intersection
+	} else {
+		float t1 = (thenode->start.y() - ray.orig.y()) / ray.dir.y();
+		float t2 = (thenode->end.y() - ray.orig.y()) / ray.dir.y();
+		
+		if(t1 > t2)
+		{// swap
+			float t = t1;
+			t1 = t2;
+			t2 = t;
+		}
+        
+		if(t2 < 0)
+			return false;	// the box is behind
+		
+		if(init == 1)
+		{
+			if(tmin < t1) tmin = t1;
+			if(tmax > t2) tmax = t2;
+			if(tmax - tmin < -EPSILON) return false;
+		} else {
+			tmin = t1;
+			tmax = t2;
+			init = 1;
+		}
+	}
+    
+	// begin to check z axis
+	if(abs(ray.dir.z()) < EPSILON)
+	{// parallel to y axis
+		if(ray.orig.z() < thenode->start.z()
+           || ray.orig.z() > thenode->end.z())
+			return false;		//no intersection
+	} else {
+		float t1 = (thenode->start.z() - ray.orig.z()) / ray.dir.z();
+		float t2 = (thenode->end.z() - ray.orig.z()) / ray.dir.z();
+        
+		if(t1 > t2)
+		{// swap
+			float t = t1;
+			t1 = t2;
+			t2 = t;
+		}
+        
+		if(t2 < 0)
+			return false;	// the box is behind
+        
+		if(init == 1)
+		{
+			if(tmin < t1) tmin = t1;
+			if(tmax > t2) tmax = t2;
+			if(tmax - tmin < -EPSILON) return 0;
+		}
+		else
+		{
+			tmin = t1;
+			tmax = t2;
+		}	
+	}
+	
+	return true;
+}
+
+bool AmKDTree::searchLeaf(int node, const AmRay &ray, int &index, float &minHit)
+{
+    index = -1;
+    minHit = -1;
+	bool hitOrNot = false;
+	for(int i = 0; i < nodes[node]->meshes.size(); i++)
+	{
+		int j = nodes[node]->meshes[i];
+		unsigned int *vindices = model->mTriangles[j].vindices;
+		float hit = AmRayTracer::hitMesh(ray, model->mVertices[vindices[0]],
+								model->mVertices[vindices[1]],
+								model->mVertices[vindices[2]]);
+        
+		if(hit > EPSILON)
+		{
+			if(!hitOrNot)
+			{
+				minHit = hit;
+				index = j;
+				hitOrNot = true;
+			}
+			else
+			{
+				if(hit < minHit)
+				{
+					minHit = hit;
+					index = j;
+				}
+			}
+		}
+	}
+    return hitOrNot;
+}

@@ -462,7 +462,7 @@ void AmModel::utilize()
         mVertices[i].mData[2] *= scale;
     }
     
-    // get the normals of triangles
+    // get the normals and bounding boxes of triangles
     mTriNorms.clear();
     for (unsigned int i = 0; i < mTriangles.size(); i++) {
         
@@ -472,6 +472,32 @@ void AmModel::utilize()
                     - mVertices[mTriangles[i].vindices[1]];
         mTriNorms.push_back(u.cross(v));
         mTriNorms[i].normalize();
+        
+        // bounding box
+        AmVec3f vtmax(M_MIN, M_MIN, M_MIN);
+        AmVec3f vtmin(M_MAX, M_MAX, M_MAX);
+        for (unsigned int v = 0; v < 3; v++) {
+            if (mVertices[mTriangles[i].vindices[v]].x() > vtmax.x()) {
+                vtmax.setX(mVertices[mTriangles[i].vindices[v]].x());
+            }
+            if (mVertices[mTriangles[i].vindices[v]].y() > vtmax.y()) {
+                vtmax.setY(mVertices[mTriangles[i].vindices[v]].y());
+            }
+            if (mVertices[mTriangles[i].vindices[v]].z() > vtmax.z()) {
+                vtmax.setZ(mVertices[mTriangles[i].vindices[v]].z());
+            }
+            if (mVertices[mTriangles[i].vindices[v]].x() < vtmin.x()) {
+                vtmin.setX(mVertices[mTriangles[i].vindices[v]].x());
+            }
+            if (mVertices[mTriangles[i].vindices[v]].y() < vtmin.y()) {
+                vtmin.setY(mVertices[mTriangles[i].vindices[v]].y());
+            }
+            if (mVertices[mTriangles[i].vindices[v]].z() < vtmin.z()) {
+                vtmin.setZ(mVertices[mTriangles[i].vindices[v]].z());
+            }
+        }
+        mTriangles[i].start = vtmin;
+        mTriangles[i].end = vtmax;
     }
 }
 

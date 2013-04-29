@@ -49,8 +49,11 @@ namespace raytracer {
         AmAxis  axis;
         float   value;
         int     index;
+        
+        AmPlane()
+        :axis(AM_X), value(0), index(0)
+        {}
     };
-    typedef shared_ptr<AmPlane> AmPlanePtr;
     
     
     /*
@@ -58,6 +61,7 @@ namespace raytracer {
      */
     class AmKDTreeNode
     {
+    public:
         int     parent;         // index of the parent in tree node vector
         int     leftChild;      // index of left child
         int     rightChild;     // index of right child
@@ -68,9 +72,18 @@ namespace raytracer {
         AmVec3f start;          // start of bounding box
         AmVec3f end;            // end of bounding box
         
-        AmPlanePtr  plane;
+        AmPlane plane;
         vector<int> meshes;     //the indices of meshes in this node
+        
+        AmKDTreeNode()
+        :start(0,0,0), end(0,0,0)
+        {
+            parent = leftChild = rightChild = sibling = -1;
+            leaf = false;
+            depth = 0;
+        }
     };
+    typedef shared_ptr<AmKDTreeNode> AmKDTreeNodePtr;
     
     
     /*
@@ -80,15 +93,35 @@ namespace raytracer {
     {
     private:
         AmModelPtr  model;
-    public:
-        vector<AmKDTreeNode>    nodes;
         
-        void setModel(AmModelPtr &m)
+    public:
+        vector<AmKDTreeNodePtr>    nodes;
+        
+        AmKDTree()
+        {}
+        
+        AmKDTree(const AmModelPtr &m)
+        :model(m)
+        {}
+        
+        void setModel(const AmModelPtr &m)
         {
             model = m;
         }
         
-        void init();
+        void    init();               // build the kdtree from the model;
+        float   search(const AmRay &ray, int &index); //search for intersection
+        
+    private:
+        void buildNode(int index); // build from the node
+        bool terminate(int index);
+        void splitNode(int index);
+        void findPlane(int index);
+        int  meshInNode(int mesh, const AmKDTreeNodePtr &node);
+        
+        bool hitBox(int index, const AmRay &ray, float &tmin, float &tmax);
+        bool searchLeaf(int node, const AmRay &ray, int &index, float &hit);
+        
     };
     
     
@@ -97,10 +130,12 @@ namespace raytracer {
      */
     class AmRayTracer
     {
-        AmModelPtr model;
-        AmCameraPtr camera;
+        AmModelPtr      model;
+        AmCameraPtr     camera;
         vector<AmLightPtr> lights;
-        int maxDepth;
+        int             maxDepth;
+        
+        AmKDTree        kdtree;
         
     public:
         AmRayTracer()
@@ -108,12 +143,16 @@ namespace raytracer {
         {}
      
         AmRayTracer(const AmModelPtr &m)
-            :maxDepth(3), model(m)
-        {}
+            :maxDepth(3), model(m), kdtree(m)
+        {
+            kdtree.init();
+        }
         
         void setModel(const AmModelPtr &m)
         {
             model = m;
+            kdtree.setModel(m);
+            kdtree.init();
         }
      
         void setCamera(const AmCameraPtr &c)
@@ -129,12 +168,14 @@ namespace raytracer {
         // render the model with the camera, put the result into buffer
         void render(AmUintPtr &pixels);
         
+        // static function to get the intersection of a ray and mesh
+        static float hitMesh(const AmRay &ray, const AmVec3f &a,
+                             const AmVec3f &b, const AmVec3f &c);
+        
     private:
         AmVec3f rayTracing(const AmRay &ray, const int depth);
         float   getHitPoint(const AmRay &ray, int &index);
         
-        float   hitMesh(const AmRay &ray, const AmVec3f &a,
-                        const AmVec3f &b, const AmVec3f &c);
         void    shadowRay(const float hit, const int index,
                           const AmRay &ray, vector<AmRay> &shadowRays);
         

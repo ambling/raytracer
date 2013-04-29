@@ -92,6 +92,7 @@ namespace raytracer {
         unsigned int nindices[3];      // array of triangle normal indices 
         unsigned int tindices[3];      // array of triangle texcoord indices
         unsigned int group;            // index of triangle group
+        AmVec3f      start, end;       // bounding box
         
         AmTriangle(unsigned int g)
             :vindices{0,0,0}, nindices{0,0,0}, tindices{0,0,0}, group(g)

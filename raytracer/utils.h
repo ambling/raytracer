@@ -29,7 +29,7 @@ namespace raytracer {
 
     static const float M_MIN = -10000000.0;
     static const float M_MAX = 10000000.0;
-    static const float EPSILON = 0.0001;
+    static const float EPSILON = 0.001;
     
     /*
      * MyVec3f: 3 floats vector
