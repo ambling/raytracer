@@ -30,20 +30,25 @@ void AmRayTracer::render(AmUintPtr &pixels)
     for (int h = 0; h < camera->height; h++) {
         for (int w = 0; w < camera->width; w++) {
             AmRay ray(camera, w, h);
+            
+#ifndef AM_RELEASE
+            cout<<"w: "<<w<<"h: "<<h<<endl;
+#endif
+            
             AmVec3f color = rayTracing(ray, maxDepth);
             
-            pixels.get()[idx] = (int)(255*color.x()) |
-                    ((int)(255*color.y()) << 8) |
-                    ((int)(255*color.z()) << 16);
-            
-            idx ++;
+            color = color * 255;
+            pixels.get()[idx+0] = static_cast<unsigned int>(color.x());
+            pixels.get()[idx+1] = static_cast<unsigned int>(color.y());
+            pixels.get()[idx+2] = static_cast<unsigned int>(color.z());
+            idx += 3;
         }
     }
 }
 
 
 // ray tracing and set the value to color
-AmVec3f AmRayTracer::rayTracing(AmRay &ray, int depth)
+AmVec3f AmRayTracer::rayTracing(const AmRay &ray, const int depth)
 {
     AmVec3f color(0, 0, 0);
     if (depth == 0) {
@@ -85,14 +90,32 @@ AmVec3f AmRayTracer::rayTracing(AmRay &ray, int depth)
         // check if shadowed,
         //  if not, get the shadow rays into the vector
         vector<AmRay> shadowRays;
-        shadowRay(hit, minMesh, shadowRays);
+        shadowRay(hit, minMesh, ray, shadowRays);
         
         // for each visible shadow ray, get the diffusive and reflective color
         for (int i = 0; i < shadowRays.size(); i++) {
-            
+            color = color + getDiffColor(shadowRays[i], minMesh, material);
+            color = color + getReflColor(ray, shadowRays[i], minMesh, material);
         }
         
-        // generate tracing ray for reflection and refraction 
+        // generate tracing ray for reflection and refraction
+        AmVec3f pos = ray.orig + (ray.dir * hit);
+        AmVec3f refl = getReflRayDir(ray.dir*(-1.0), model->mTriNorms[minMesh]);
+        color = color + rayTracing(AmRay(pos, refl), depth-1);
+        
+        if (material->transperancy < 1 && material->density != 0) {
+            // need refraction
+            color.setUpper(1.0);
+            color = color * material->transperancy;
+            
+            // move front a little
+            pos = pos + ray.dir * 2 * EPSILON;
+            
+            AmVec3f refr = getRefrRayDir(ray.dir,
+                                         model->mTriNorms[minMesh], material);
+            color = color + (rayTracing(AmRay(pos, refr), depth-1)
+                             * (1-material->transperancy));
+        }
         
         //color clipped to [0, 1.0]
         color.setUpper(1.0);
@@ -134,138 +157,110 @@ float AmRayTracer::getHitPoint(const AmRay &ray, int &index)
     return mindis;
 }
 
-
-/*
- * get the color of this ray and generate the subray
- */
-AmRay AmRayTracer::setColor(const AmRay &ray, AmVec3f &color)
+// diffuse * (L.N)
+AmVec3f AmRayTracer::getDiffColor(const AmRay &shadowRay,
+                                  const int index,
+                                  const AmMaterial *material)
 {
-//    //vAssign((*color), materials[meshes[obMesh].ma].color);
-//    if(materials[meshes[obMesh].ma].ref == 0)
-//    {//diffuse
-//        vAssign((*color), materials[meshes[obMesh].ma].emi);
-//        vAdd((*color), (*color), ambient);
-//        
-//        vec3f norm, pos, ab, bc;
-//        vMul(pos, ray.dirc, t);
-//        vAdd(pos, ray.orig, pos);		//position = R + tD
-//        vSub(ab, vertices[meshes[obMesh].b], vertices[meshes[obMesh].a]);	//pa = a - p
-//        vSub(bc, vertices[meshes[obMesh].c], vertices[meshes[obMesh].b]);	//pa = a - p
-//        vCross(norm, ab, bc);		//norm == ab x bc, to determine the right direction
-//#ifndef GPU_KERNEL
-//        //printf("norm: ");vPrint(norm);
-//        //printf("ray.dirc: ");vPrint(ray.dirc);
-//#endif
-//        //if(vDot(norm, ray.dirc) > EPSILON) vMul(norm, norm, -1.0); //set the direction of norm
-//        vNorm(norm);
-//        
-//        int i;
-//        for(i = 0; i < sphereNum; i++)
-//        {//find the light source
-//            if(spheres[i].emi.x == 0 && spheres[i].emi.y == 0
-//               && spheres[i].emi.z == 0)
-//                continue;
-//            
-//            vec3f light;
-//            vSub(light, pos, spheres[i].pos);	//light = position - pi
-//            float distance = sqrt(vDot(light, light));	//for dot light source
-//            vNorm(light);
-//            float d = vDot(norm, light);		//d = L x N
-//            if(d > 0) continue;
-//			
-//            if(isShadow(root, i, -1, obMesh, distance, sphereNum, vertexNum, meshNum, pos,
-//                        light, spheres, vertices, meshes)) continue;
-//            
-//            vec3f addcolor;
-//            vMul(addcolor, materials[meshes[obMesh].ma].color, (-d));
-//            vvMul(addcolor, addcolor, spheres[i].emi);
-//            vAdd((*color), (*color), addcolor);
-//        }
-//        
-//        return ray;
-//    }
-//    else if(materials[meshes[obMesh].ma].ref == 1)
-//    {//specular
-//        Ray newray;
-//        
-//        vec3f norm, pos, ab, bc;
-//        vMul(pos, ray.dirc, t);
-//        vAdd(pos, ray.orig, pos);		//position = R + tD
-//        vSub(ab, vertices[meshes[obMesh].b], vertices[meshes[obMesh].a]);	//pa = a - p
-//        vSub(bc, vertices[meshes[obMesh].c], vertices[meshes[obMesh].b]);	//pa = a - p
-//        vCross(norm, ab, bc);		//norm == ab x bc, to determine the right direction
-//#ifndef GPU_KERNEL
-//        //printf("norm: ");vPrint(norm);
-//        //printf("ray.dirc: ");vPrint(ray.dirc);
-//#endif
-//        //if(vDot(norm, ray.dirc) > EPSILON) vMul(norm, norm, -1.0); //set the direction of norm
-//        vNorm(norm);
-//        
-//        vAssign(newray.orig, pos);
-//        
-//        vec3f tmp;
-//        vMul(tmp, norm, 2*vDot(ray.dirc, norm));
-//        vSub(newray.dirc, ray.dirc, tmp);	//newD = D - 2(D.N)N
-//        
-//        return newray;
-//        
-//    }
-//    else if(materials[meshes[obMesh].ma].ref == 2)
-//    {//refraction
-//        Ray newray;
-//        
-//        vec3f norm, pos, ab, bc;
-//        vMul(pos, ray.dirc, t);
-//        vAdd(pos, ray.orig, pos);		//position = R + tD
-//        vSub(ab, vertices[meshes[obMesh].b], vertices[meshes[obMesh].a]);	//pa = a - p
-//        vSub(bc, vertices[meshes[obMesh].c], vertices[meshes[obMesh].b]);	//pa = a - p
-//        vCross(norm, ab, bc);		//norm == ab x bc, to determine the right direction
-//#ifndef GPU_KERNEL
-//        //printf("norm: ");vPrint(norm);
-//        //printf("ray.dirc: ");vPrint(ray.dirc);
-//#endif
-//        //if(vDot(norm, ray.dirc) > EPSILON) vMul(norm, norm, -1.0); //set the direction of norm
-//        vNorm(norm);
-//        
-//        float n = materials[meshes[obMesh].ma].outrfr / materials[meshes[obMesh].ma].inrfr;	//default: n = n1 / n2
-//        float cosI = - vDot(ray.dirc, norm);
-//        if(cosI < 0)
-//        {//the ray is inside the mesh box
-//            cosI = - cosI;
-//            n = 1 / n;
-//            vMul(norm, norm, -1);
-//        }
-//        float cos2O = 1.0f - n * n * (1.0f - cosI * cosI);		//the square of cosO, may be negative
-//        if(cos2O > 0)
-//        {//has refraction ray
-//            vec3f displace;
-//            vMul(displace, ray.dirc, 0.01);
-//            vAdd(newray.orig, pos, displace);
-//            
-//            vec3f tmp1, tmp2;
-//            vMul(tmp1, ray.dirc, n);
-//            float tmp = n * cosI - sqrt(cos2O);
-//            vMul(tmp2, norm, tmp);
-//            vAdd(newray.dirc, tmp1, tmp2);			//newD = (n * ray.dirc) + (n * cosI - sqrt( cos2O )) * N;
-//            
-//            return newray;
-//        }
-//        
-//        return ray;
-//    }
-    return ray;
+    AmVec3f color(material->diffuse[0] * material->diffuse[3],
+                  material->diffuse[1] * material->diffuse[3],
+                  material->diffuse[2] * material->diffuse[3]);
+    
+    float ln = shadowRay.dir.dot(model->mTriNorms[index]);
+    ln = max(ln, float(0)); // if the direction is negative, set it to black
+    color = color * ln;
+    return color;
 }
 
-// for each light, check if it can reach the mesh
-void AmRayTracer::shadowRay(const float hit, const int index,
-                            vector<AmRay> &shadowRays)
+// specular * (V.R)^shinniness
+AmVec3f AmRayTracer::getReflColor(const AmRay &ray,
+                                  const AmRay &shadowRay,
+                                  const int index,
+                                  const AmMaterial *material)
 {
+    AmVec3f color(material->specular[0] * material->specular[3],
+                  material->specular[1] * material->specular[3],
+                  material->specular[2] * material->specular[3]);
     
+    AmVec3f refl = getReflRayDir(shadowRay.dir, model->mTriNorms[index]);
+    
+    // (V.R)^shinniness
+    float vr = refl.dot(ray.dir * (-1.0));
+    vr = max(vr, float(0));
+    vr = pow(vr, material->shininess);
+    
+    return color * vr;
+}
+
+AmVec3f AmRayTracer::getReflRayDir(const AmVec3f &D, const AmVec3f &N)
+{
+    // R: reflected ray's direction
+    // R = (D.N)N - (D-(D.N)N)
+    AmVec3f norm = N * (D.dot(N));
+    AmVec3f refl = norm*2 - D;
+    refl.normalize();
+    return refl;
+}
+
+AmVec3f AmRayTracer::getRefrRayDir(const AmVec3f &D, const AmVec3f &N,
+                                   const AmMaterial *material)
+{
+    assert(material->density != 0);//should have non-zero density
+    float density = material->density;
+    AmVec3f n(N);
+    
+    if (D.dot(N) < 0) {
+        // from in to out
+        n = n * (-1.0);
+        density = 1.0 / density;
+    }
+    
+    float cosIn = D.dot(n);
+    float cos2Out = 1.0 - (1.0 - cosIn * cosIn) * (density * density);
+    if(cos2Out < 0) cos2Out = 0; // full reflection
+    
+    float cosOut = sqrt(cos2Out);
+    float sinOut = sqrt(1.0-cos2Out);
+    
+    // D-(D.N)N
+    AmVec3f DmN = D - n * (n.dot(D));
+    DmN.normalize();
+    return n*cosOut + DmN*sinOut;
+    
+}
+
+// for each light, check if it can reach the mesh,
+//  the shadow ray's direction is from the mesh to the light
+void AmRayTracer::shadowRay(const float hit, const int index,
+                            const AmRay &ray, vector<AmRay> &shadowRays)
+{
+    for (int i = 0; i < lights.size(); i++) {
+        if (lights[i]->type != AmLight::AM_POSITION) {
+            continue;
+        }
+        AmLightPtr light = lights[i];
+        AmVec3f pos = ray.orig + (ray.dir * hit);//hit position
+        AmVec3f dir = AmVec3f(light->value[0], light->value[1], light->value[2])
+                        - pos;
+        
+        float dis = sqrt(dir.dot(dir)); //distance
+        dir.normalize();
+        AmRay ray(pos, dir);
+        
+        int hitMesh = -1;
+        float hitAgain = getHitPoint(ray, hitMesh);
+        if (hitMesh != index && hitAgain > EPSILON && hitAgain < dis) {
+            // hit another mesh
+            continue;
+        }
+        shadowRays.push_back(ray);
+    }
 }
 
 // get the hit point of the ray and the triangle (a, b, c),
 //  using Intersection with Barycentric Triangle:
-//  http://groups.csail.mit.edu/graphics/classes/6.837/F04/lectures/02_RayCasting_II.pdf
+//  http://groups.csail.mit.edu/graphics/classes/
+//        6.837/F04/lectures/02_RayCasting_II.pdf
 // return -1 if there is no intersection
 float AmRayTracer::hitMesh(const AmRay &ray, const AmVec3f &a,
                 const AmVec3f &b, const AmVec3f &c)

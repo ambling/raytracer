@@ -13,7 +13,7 @@
 
 using namespace raytracer;
 
-#define AM_DEBUGGING     // if not debugging, comment this out
+#define AM_RELEASE     // if not debugging, comment this out
 
 int main(int argc, char * argv[])
 {
@@ -28,7 +28,7 @@ int main(int argc, char * argv[])
     }
     
     
-    MyOpengl mygl(argc, argv);
+    MyOpengl mygl(argc, argv, 800, 600);
     
     AmModelPtr model(new AmModel(path));
     model->utilize();

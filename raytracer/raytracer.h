@@ -25,6 +25,10 @@ namespace raytracer {
         AmVec3f orig;
         AmVec3f dir;
         
+        AmRay(const AmVec3f &o, const AmVec3f &d)
+            :orig(o), dir(d)
+        {}
+        
         AmRay(const AmCameraPtr &camera, int w, int h);
         
         bool operator == (AmRay &rhs)
@@ -47,11 +51,11 @@ namespace raytracer {
         
     public:
         AmRayTracer()
-            :maxDepth(5)
+            :maxDepth(3)
         {}
      
         AmRayTracer(const AmModelPtr &m)
-            :maxDepth(5), model(m)
+            :maxDepth(3), model(m)
         {}
         
         void setModel(const AmModelPtr &m)
@@ -73,14 +77,26 @@ namespace raytracer {
         void render(AmUintPtr &pixels);
         
     private:
-        AmVec3f rayTracing(AmRay &ray, int depth);
+        AmVec3f rayTracing(const AmRay &ray, const int depth);
         float   getHitPoint(const AmRay &ray, int &index);
-        AmRay   setColor(const AmRay &ray, AmVec3f &color);
         
         float   hitMesh(const AmRay &ray, const AmVec3f &a,
                         const AmVec3f &b, const AmVec3f &c);
         void    shadowRay(const float hit, const int index,
-                          vector<AmRay> &shadowRays);
+                          const AmRay &ray, vector<AmRay> &shadowRays);
+        
+        AmVec3f getDiffColor(const AmRay &shadowRay,
+                             const int index,
+                             const AmMaterial *material);
+        
+        AmVec3f getReflRayDir(const AmVec3f &D, const AmVec3f &N);
+        AmVec3f getReflColor(const AmRay &ray,
+                             const AmRay &shadowRay,
+                             const int index,
+                             const AmMaterial *material);
+        
+        AmVec3f getRefrRayDir(const AmVec3f &D, const AmVec3f &N,
+                              const AmMaterial *material);
     };
 
 

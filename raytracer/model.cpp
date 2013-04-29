@@ -466,10 +466,10 @@ void AmModel::utilize()
     mTriNorms.clear();
     for (unsigned int i = 0; i < mTriangles.size(); i++) {
         
-        AmVec3f u = mVertices[mTriangles[i].nindices[1]]
-                    - mVertices[mTriangles[i].nindices[0]];
-        AmVec3f v = mVertices[mTriangles[i].nindices[2]]
-                    - mVertices[mTriangles[i].nindices[1]];
+        AmVec3f u = mVertices[mTriangles[i].vindices[1]]
+                    - mVertices[mTriangles[i].vindices[0]];
+        AmVec3f v = mVertices[mTriangles[i].vindices[2]]
+                    - mVertices[mTriangles[i].vindices[1]];
         mTriNorms.push_back(u.cross(v));
         mTriNorms[i].normalize();
     }

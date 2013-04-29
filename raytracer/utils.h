@@ -10,9 +10,11 @@
 #define raytracer_utils_h
 
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
 #include <cmath>
+#include <algorithm>
 #include <cassert>
 
 #ifdef _LIBCPP_VERSION
@@ -183,6 +185,9 @@ namespace raytracer {
             float s = sqrt(mData[0]*mData[0]
                            + mData[1]*mData[1]
                            + mData[2]*mData[2]);
+            if (s == 0) {
+                return;
+            }
             mData[0] /= s;
             mData[1] /= s;
             mData[2] /= s;
@@ -240,13 +245,16 @@ namespace raytracer {
     };
     
     
-    
+    class AmRayTracer;
     class AmModel;
     class AmCamera;
     class AmLight;
+    class AmTriangle;
+    class AmMaterial;
     typedef shared_ptr<AmModel> AmModelPtr;
     typedef shared_ptr<AmCamera> AmCameraPtr;
     typedef shared_ptr<AmLight> AmLightPtr;
+    typedef shared_ptr<AmRayTracer> AmRayTracerPtr;
     
     typedef shared_ptr<float> AmFloatPtr;
     typedef shared_ptr<unsigned int> AmUintPtr;

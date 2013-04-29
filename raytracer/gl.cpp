@@ -9,17 +9,22 @@
 #include "gl.h"
 #include "utils.h"
 #include "model.h"
+#include "raytracer.h"
+
+#include <ctime> //timer
 
 using namespace std;
 
 namespace raytracer
 {
     ////////global variables for OpenGL//////
-    int window_id;
+    int window_id, width, height;
     bool myDraw;
     AmModelPtr model;
     AmCameraPtr camera;
     vector<AmLightPtr> lights;
+    AmRayTracerPtr rayTracer;
+    AmUintPtr pixels;
     
     void idle(void);
     void display(void);
@@ -44,7 +49,10 @@ namespace raytracer
     {
         this->argc = argc;
         this->argv = argv;
-        myDraw = false;
+        
+        width = mWidth;
+        height = mHeight;
+        myDraw = true;
         
         AmVec3f eye(0,0,0);
         AmVec3f center(0,0,-1);
@@ -60,6 +68,12 @@ namespace raytracer
         lights.push_back(AmLightPtr(new AmLight(
                             AmLight::AM_AMBIENT,
                             AmLight::AM_LIGHT1, light_ambient)));
+        
+        rayTracer = AmRayTracerPtr(new AmRayTracer());
+        rayTracer->setCamera(camera);
+        rayTracer->setLight(lights);
+        
+        pixels = AmUintPtr(new unsigned int[width * height * 3]);
     }
     
 	void MyOpengl::init()
@@ -81,13 +95,51 @@ namespace raytracer
     
     void MyOpengl::setModel(const AmModelPtr &m){
         model = m;
+        rayTracer->setModel(m);
     }
     
+    void PrintString(void *font, const string str)
+    {
+        for (int i = 0; i < str.size(); i++)
+            glutBitmapCharacter(font, str[i]);
+    }
     
-    /////// OpenGL reliable functions /////////////
+    void raytracerDraw()
+    {
+        rayTracer->render(pixels);
+        
+        glClear(GL_COLOR_BUFFER_BIT);
+        glRasterPos2i(0, 0);
+        glDrawPixels(width, height, GL_RGB, GL_UNSIGNED_INT, pixels.get());
+        
+    }
     
     void openglDraw()
     {
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        
+        glViewport(0, 0, width, height);
+        
+        glMatrixMode( GL_PROJECTION);
+        glLoadIdentity();
+        
+        //glOrtho(-width / 2.0, width / 2.0, -height / 2.0, height / 2.0,
+        //          -10, 10000);
+        glFrustum(-width / 2.0, width / 2.0, -height / 2.0, height / 2.0, 10.0,
+                  -200.0);
+        
+        // set the camera
+        gluLookAt(camera->eye.x(), camera->eye.y(), camera->eye.z(),
+                  camera->center.x(), camera->center.y(), camera->center.z(),
+                  camera->up.x(), camera->up.y(), camera->up.z());
+        
+        // enable the light
+        glEnable(GL_LIGHTING);
+        for (int i = 0; i < lights.size(); i++) {
+            glLightfv(lights[i]->name, lights[i]->type, lights[i]->value);
+            glEnable(lights[i]->name);
+        }
+        
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_COLOR_MATERIAL);
         
@@ -126,6 +178,9 @@ namespace raytracer
         }
     }
     
+    
+    /////// OpenGL reliable functions /////////////
+    
     void idle(void)
     {
         glutPostRedisplay();
@@ -134,38 +189,28 @@ namespace raytracer
     void display(void)
     {
         glClearColor(0.2, 0.2, 0.2, 1.0); //black is not comfortable
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
-        int width = glutGet(GLUT_WINDOW_WIDTH);
-        int height = glutGet(GLUT_WINDOW_HEIGHT);
-        glViewport(0, 0, width, height);
-        
-        glMatrixMode( GL_PROJECTION);
-        glLoadIdentity();
-        
-        //glOrtho(-width / 2.0, width / 2.0, -height / 2.0, height / 2.0,
-        //          -10, 10000);
-        glFrustum(-width / 2.0, width / 2.0, -height / 2.0, height / 2.0, 10.0,
-                  -200.0);
-        
-        // set the camera
-        gluLookAt(camera->eye.x(), camera->eye.y(), camera->eye.z(),
-                  camera->center.x(), camera->center.y(), camera->center.z(),
-                  camera->up.x(), camera->up.y(), camera->up.z());
-        
-        // enable the light
-        glEnable(GL_LIGHTING);
-        for (int i = 0; i < lights.size(); i++) {
-            glLightfv(lights[i]->name, lights[i]->type, lights[i]->value);
-            glEnable(lights[i]->name);
-        }
+        // start the timer
+        clock_t startTime = clock();
         
         if (myDraw) {
             // use the raytracer functions of the model
+            raytracerDraw();
         } else {
             // call the openGL functions to draw the scene
             openglDraw();
         }
+        
+        // stop the timer
+        clock_t endTime = clock();
+        //show the fps
+        double fps = 1.0 * CLOCKS_PER_SEC / (endTime - startTime);
+        ostringstream oss;
+        oss.precision(10);
+        oss<<"fps: "<<fps;
+        glColor3f(1.f, 1.f, 1.f);
+        glRasterPos2i(4, 10);
+        PrintString(GLUT_BITMAP_HELVETICA_18, oss.str());
         
         //glMatrixMode( GL_MODELVIEW);
         glLoadIdentity();
