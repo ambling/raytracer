@@ -28,7 +28,7 @@ int main(int argc, char * argv[])
     }
     
     
-    MyOpengl mygl(argc, argv, 800, 600);
+    MyOpengl mygl(argc, argv, 100, 100);
     
     AmModelPtr model(new AmModel(path));
     model->utilize();

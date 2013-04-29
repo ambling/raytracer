@@ -21,11 +21,11 @@
          ignoreCount = "0"
          continueAfterRunningActions = "No"
          filePath = "raytracer/gl.cpp"
-         timestampString = "388919612.887595"
+         timestampString = "388934012.616046"
          startingColumnNumber = "9223372036854775807"
          endingColumnNumber = "9223372036854775807"
-         startingLineNumber = "149"
-         endingLineNumber = "149"
+         startingLineNumber = "141"
+         endingLineNumber = "141"
          landmarkName = "openglDraw()"
          landmarkType = "7">
       </FileBreakpoint>
@@ -34,11 +34,11 @@
          ignoreCount = "0"
          continueAfterRunningActions = "No"
          filePath = "raytracer/gl.cpp"
-         timestampString = "388919612.887595"
+         timestampString = "388934012.616046"
          startingColumnNumber = "9223372036854775807"
          endingColumnNumber = "9223372036854775807"
-         startingLineNumber = "147"
-         endingLineNumber = "147"
+         startingLineNumber = "139"
+         endingLineNumber = "139"
          landmarkName = "openglDraw()"
          landmarkType = "7">
       </FileBreakpoint>
@@ -47,26 +47,13 @@
          ignoreCount = "0"
          continueAfterRunningActions = "No"
          filePath = "raytracer/gl.cpp"
-         timestampString = "388918092.998804"
+         timestampString = "388932789.418265"
          startingColumnNumber = "9223372036854775807"
          endingColumnNumber = "9223372036854775807"
-         startingLineNumber = "109"
-         endingLineNumber = "109"
+         startingLineNumber = "114"
+         endingLineNumber = "114"
          landmarkName = "raytracerDraw()"
          landmarkType = "7">
-      </FileBreakpoint>
-      <FileBreakpoint
-         shouldBeEnabled = "No"
-         ignoreCount = "0"
-         continueAfterRunningActions = "No"
-         filePath = "raytracer/raytracer.cpp"
-         timestampString = "388919773.034633"
-         startingColumnNumber = "9223372036854775807"
-         endingColumnNumber = "9223372036854775807"
-         startingLineNumber = "97"
-         endingLineNumber = "97"
-         landmarkName = "AmRayTracer::rayTracing(const AmRay &amp;ray, const int depth)"
-         landmarkType = "5">
       </FileBreakpoint>
       <FileBreakpoint
          shouldBeEnabled = "No"
@@ -99,11 +86,11 @@
          ignoreCount = "0"
          continueAfterRunningActions = "No"
          filePath = "raytracer/gl.cpp"
-         timestampString = "388919612.887595"
+         timestampString = "388932789.418265"
          startingColumnNumber = "9223372036854775807"
          endingColumnNumber = "9223372036854775807"
-         startingLineNumber = "110"
-         endingLineNumber = "110"
+         startingLineNumber = "115"
+         endingLineNumber = "115"
          landmarkName = "raytracerDraw()"
          landmarkType = "7">
       </FileBreakpoint>
@@ -112,11 +99,11 @@
          ignoreCount = "0"
          continueAfterRunningActions = "No"
          filePath = "raytracer/gl.cpp"
-         timestampString = "388918304.929368"
+         timestampString = "388932789.418265"
          startingColumnNumber = "9223372036854775807"
          endingColumnNumber = "9223372036854775807"
-         startingLineNumber = "97"
-         endingLineNumber = "97"
+         startingLineNumber = "99"
+         endingLineNumber = "99"
          landmarkName = "MyOpengl::setModel(const AmModelPtr &amp;m)"
          landmarkType = "5">
       </FileBreakpoint>
@@ -125,11 +112,11 @@
          ignoreCount = "0"
          continueAfterRunningActions = "No"
          filePath = "raytracer/raytracer.cpp"
-         timestampString = "388919773.034633"
+         timestampString = "388935178.114807"
          startingColumnNumber = "9223372036854775807"
          endingColumnNumber = "9223372036854775807"
-         startingLineNumber = "62"
-         endingLineNumber = "62"
+         startingLineNumber = "60"
+         endingLineNumber = "60"
          landmarkName = "AmRayTracer::rayTracing(const AmRay &amp;ray, const int depth)"
          landmarkType = "5">
       </FileBreakpoint>
@@ -138,11 +125,11 @@
          ignoreCount = "0"
          continueAfterRunningActions = "No"
          filePath = "raytracer/raytracer.cpp"
-         timestampString = "388919773.034633"
+         timestampString = "388935178.114807"
          startingColumnNumber = "9223372036854775807"
          endingColumnNumber = "9223372036854775807"
-         startingLineNumber = "139"
-         endingLineNumber = "139"
+         startingLineNumber = "143"
+         endingLineNumber = "143"
          landmarkName = "AmRayTracer::getHitPoint(const AmRay &amp;ray, int &amp;index)"
          landmarkType = "5">
       </FileBreakpoint>
@@ -151,11 +138,11 @@
          ignoreCount = "0"
          continueAfterRunningActions = "No"
          filePath = "raytracer/gl.cpp"
-         timestampString = "388919273.718639"
+         timestampString = "388932789.418265"
          startingColumnNumber = "9223372036854775807"
          endingColumnNumber = "9223372036854775807"
-         startingLineNumber = "76"
-         endingLineNumber = "76"
+         startingLineNumber = "77"
+         endingLineNumber = "77"
          landmarkName = "MyOpengl::setVal(int argc, char** argv)"
          landmarkType = "5">
       </FileBreakpoint>
@@ -164,12 +151,25 @@
          ignoreCount = "0"
          continueAfterRunningActions = "No"
          filePath = "raytracer/raytracer.cpp"
-         timestampString = "388919790.243859"
+         timestampString = "388929829.375233"
          startingColumnNumber = "9223372036854775807"
          endingColumnNumber = "9223372036854775807"
-         startingLineNumber = "38"
-         endingLineNumber = "38"
+         startingLineNumber = "35"
+         endingLineNumber = "35"
          landmarkName = "AmRayTracer::render(AmUintPtr &amp;pixels)"
+         landmarkType = "5">
+      </FileBreakpoint>
+      <FileBreakpoint
+         shouldBeEnabled = "No"
+         ignoreCount = "0"
+         continueAfterRunningActions = "No"
+         filePath = "raytracer/raytracer.cpp"
+         timestampString = "388935178.114807"
+         startingColumnNumber = "9223372036854775807"
+         endingColumnNumber = "9223372036854775807"
+         startingLineNumber = "152"
+         endingLineNumber = "152"
+         landmarkName = "AmRayTracer::getHitPoint(const AmRay &amp;ray, int &amp;index)"
          landmarkType = "5">
       </FileBreakpoint>
    </FileBreakpoints>

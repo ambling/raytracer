@@ -29,6 +29,7 @@ namespace raytracer
     void idle(void);
     void display(void);
     void keyboard(unsigned char key, int x, int y);
+    void reshape(int w, int h);
     
 	MyOpengl::MyOpengl( int argc,  char** argv) :
         mWidth(800), mHeight(600)
@@ -54,14 +55,14 @@ namespace raytracer
         height = mHeight;
         myDraw = true;
         
-        AmVec3f eye(0,0,0);
-        AmVec3f center(0,0,-1);
+        AmVec3f eye(0,0,2);
+        AmVec3f center(0,0,0);
         AmVec3f up(0,1,0);
         camera = AmCameraPtr(new AmCamera(mWidth, mHeight, eye, center, up));
         
         
         float light_position[] = { 1.0, 0.0, 0.0, 0.0 };
-        float light_ambient[] = { 0.2, 0.2, 0.2, 1.0 };
+        float light_ambient[] = { 1.0, 1.0, 1.0, 1.0 };
         lights.push_back(AmLightPtr(new AmLight(
                             AmLight::AM_POSITION,
                             AmLight::AM_LIGHT0, light_position)));
@@ -73,7 +74,7 @@ namespace raytracer
         rayTracer->setCamera(camera);
         rayTracer->setLight(lights);
         
-        pixels = AmUintPtr(new unsigned int[width * height * 3]);
+        pixels = AmUintPtr(new unsigned int[width * height]);
     }
     
 	void MyOpengl::init()
@@ -88,6 +89,7 @@ namespace raytracer
 		glutDisplayFunc(display);
 		glutKeyboardFunc(keyboard);
 		glutIdleFunc(idle);
+        glutReshapeFunc(reshape);
         
 		glutMainLoop();
 	}
@@ -106,28 +108,18 @@ namespace raytracer
     
     void raytracerDraw()
     {
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_COLOR_MATERIAL);
+        glDisable(GL_LIGHTING);
         rayTracer->render(pixels);
         
-        glClear(GL_COLOR_BUFFER_BIT);
-        glRasterPos2i(0, 0);
-        glDrawPixels(width, height, GL_RGB, GL_UNSIGNED_INT, pixels.get());
+        glWindowPos2i(0, 0);
+        glDrawPixels(width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels.get());
         
     }
     
     void openglDraw()
     {
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        
-        glViewport(0, 0, width, height);
-        
-        glMatrixMode( GL_PROJECTION);
-        glLoadIdentity();
-        
-        //glOrtho(-width / 2.0, width / 2.0, -height / 2.0, height / 2.0,
-        //          -10, 10000);
-        glFrustum(-width / 2.0, width / 2.0, -height / 2.0, height / 2.0, 10.0,
-                  -200.0);
-        
         // set the camera
         gluLookAt(camera->eye.x(), camera->eye.y(), camera->eye.z(),
                   camera->center.x(), camera->center.y(), camera->center.z(),
@@ -176,6 +168,7 @@ namespace raytracer
             }
             glEnd();
         }
+        
     }
     
     
@@ -186,9 +179,36 @@ namespace raytracer
         glutPostRedisplay();
     }
     
+    void reshape(int w, int h)
+    {
+        width = w;
+        height = h;
+        camera->width = w;
+        camera->height = h;
+        camera->update();
+        
+        pixels = AmUintPtr(new unsigned int[w*h]);
+        
+    }
+    
     void display(void)
     {
         glClearColor(0.2, 0.2, 0.2, 1.0); //black is not comfortable
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        
+        glViewport(0, 0, (GLsizei)width, (GLsizei)height);
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        if (width <= height)
+            glOrtho(-1, 1, -1 * (GLfloat)height/(GLfloat)width,
+                    1 * (GLfloat)height/(GLfloat)width, -10.0, 10.0);
+        else
+            glOrtho(-1*(GLfloat)width/(GLfloat)height,
+                    1*(GLfloat)width/(GLfloat)height,
+                    -1, 1, -10.0, 10.0);
+        
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
         
         // start the timer
         clock_t startTime = clock();
@@ -208,12 +228,13 @@ namespace raytracer
         ostringstream oss;
         oss.precision(10);
         oss<<"fps: "<<fps;
+        glDisable(GL_COLOR_MATERIAL);
         glColor3f(1.f, 1.f, 1.f);
-        glRasterPos2i(4, 10);
+        if (width <= height)
+            glRasterPos2f(-0.9, -0.9*(GLfloat)height/(GLfloat)width);
+        else
+            glRasterPos2f(-0.9*(GLfloat)width/(GLfloat)height, -0.9);
         PrintString(GLUT_BITMAP_HELVETICA_18, oss.str());
-        
-        //glMatrixMode( GL_MODELVIEW);
-        glLoadIdentity();
         
         glutSwapBuffers();
     }
@@ -229,6 +250,7 @@ namespace raytracer
         if (key == ' ')
         {// space key to switch the render function (raytracer or OpenGL)
             myDraw = !myDraw;
+            glutPostRedisplay();
         }
         
         float step = 0.1;

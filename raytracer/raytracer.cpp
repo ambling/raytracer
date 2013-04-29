@@ -30,18 +30,16 @@ void AmRayTracer::render(AmUintPtr &pixels)
     for (int h = 0; h < camera->height; h++) {
         for (int w = 0; w < camera->width; w++) {
             AmRay ray(camera, w, h);
-            
-#ifndef AM_RELEASE
-            cout<<"w: "<<w<<"h: "<<h<<endl;
-#endif
+
             
             AmVec3f color = rayTracing(ray, maxDepth);
             
             color = color * 255;
-            pixels.get()[idx+0] = static_cast<unsigned int>(color.x());
-            pixels.get()[idx+1] = static_cast<unsigned int>(color.y());
-            pixels.get()[idx+2] = static_cast<unsigned int>(color.z());
-            idx += 3;
+            pixels.get()[idx] = static_cast<unsigned int>(color.x()) |
+                        (static_cast<unsigned int>(color.x()) << 8) |
+                        (static_cast<unsigned int>(color.x()) << 16);
+            
+            idx += 1;
         }
     }
 }
@@ -78,6 +76,7 @@ AmVec3f AmRayTracer::rayTracing(const AmRay &ray, const int depth)
         AmVec3f matAmbient(material->ambient[0]*material->ambient[3],
                            material->ambient[1]*material->ambient[3],
                            material->ambient[2]*material->ambient[3]);
+        
         for (int i = 0; i < lights.size(); i++) {
             if (lights[i]->type == AmLight::AM_AMBIENT) {
                 color = color + ( matAmbient *
@@ -97,25 +96,29 @@ AmVec3f AmRayTracer::rayTracing(const AmRay &ray, const int depth)
             color = color + getDiffColor(shadowRays[i], minMesh, material);
             color = color + getReflColor(ray, shadowRays[i], minMesh, material);
         }
-        
-        // generate tracing ray for reflection and refraction
-        AmVec3f pos = ray.orig + (ray.dir * hit);
-        AmVec3f refl = getReflRayDir(ray.dir*(-1.0), model->mTriNorms[minMesh]);
-        color = color + rayTracing(AmRay(pos, refl), depth-1);
-        
-        if (material->transperancy < 1 && material->density != 0) {
-            // need refraction
-            color.setUpper(1.0);
-            color = color * material->transperancy;
-            
-            // move front a little
-            pos = pos + ray.dir * 2 * EPSILON;
-            
-            AmVec3f refr = getRefrRayDir(ray.dir,
-                                         model->mTriNorms[minMesh], material);
-            color = color + (rayTracing(AmRay(pos, refr), depth-1)
-                             * (1-material->transperancy));
-        }
+//
+//        // generate tracing ray for reflection and refraction
+//        AmVec3f pos = ray.orig + (ray.dir * hit);
+//        if (material->illum >= 3 && material->illum <= 7) {
+//            AmVec3f refl = getReflRayDir(ray.dir*(-1.0), model->mTriNorms[minMesh]);
+//            color = color + rayTracing(AmRay(pos, refl), depth-1);
+//        }
+//        
+//        if (material->transperancy < 1 && material->density != 0) {
+//            // need refraction
+//            color.setUpper(1.0);
+//            color = color * material->transperancy;
+//            
+//            if (material->illum >= 6 && material->illum <= 7) {
+//                // move front a little
+//                pos = pos + ray.dir * 2 * EPSILON;
+//                AmVec3f refr = getRefrRayDir(ray.dir,
+//                                        model->mTriNorms[minMesh], material);
+//                color = color + (rayTracing(AmRay(pos, refr), depth-1)
+//                                 * (1-material->transperancy));
+//            }
+//            
+//        }
         
         //color clipped to [0, 1.0]
         color.setUpper(1.0);

@@ -38,6 +38,59 @@ namespace raytracer {
         
     };
     
+    /*
+     * space plane for kd-tree
+     */
+    class AmPlane
+    {
+    public:
+        enum AmAxis{AM_X, AM_Y, AM_Z};
+        
+        AmAxis  axis;
+        float   value;
+        int     index;
+    };
+    typedef shared_ptr<AmPlane> AmPlanePtr;
+    
+    
+    /*
+     * kd-tree node
+     */
+    class AmKDTreeNode
+    {
+        int     parent;         // index of the parent in tree node vector
+        int     leftChild;      // index of left child
+        int     rightChild;     // index of right child
+        int     sibling;        // index of sibling
+        
+        bool    leaf;           // is leaf or not
+        int     depth;
+        AmVec3f start;          // start of bounding box
+        AmVec3f end;            // end of bounding box
+        
+        AmPlanePtr  plane;
+        vector<int> meshes;     //the indices of meshes in this node
+    };
+    
+    
+    /*
+     * kd-tree to accelerate the tracing
+     */
+    class AmKDTree
+    {
+    private:
+        AmModelPtr  model;
+    public:
+        vector<AmKDTreeNode>    nodes;
+        
+        void setModel(AmModelPtr &m)
+        {
+            model = m;
+        }
+        
+        void init();
+    };
+    
     
     /*
      * the class that implements ray tracing algorithm

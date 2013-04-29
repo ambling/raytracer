@@ -442,9 +442,9 @@ void AmModel::utilize()
     }
     
     // the width, height and depth of the model
-    float w = abs(vmax.x()) + abs(vmin.x());
-    float h = abs(vmax.y()) + abs(vmin.y());
-    float d = abs(vmax.z()) + abs(vmin.z());
+    float w = vmax.x() - vmin.x();
+    float h = vmax.y() - vmin.y();
+    float d = vmax.z() - vmin.z();
     
     // the center of the model
     float cx = (vmax.x() + vmin.x()) / 2;
