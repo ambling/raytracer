@@ -22,9 +22,9 @@ int main(int argc, char * argv[])
         path = argv[1];
     } else {
         path = string("/Users/ambling/Documents/Dropbox/_Code/raytracer/")
-                +"raytracer/obj/table12/table12.obj";
-        path = string("/Users/ambling/Documents/Dropbox/_Code/raytracer/")
-                +"raytracer/obj/light_collection/fot01.obj";
+                +"raytracer/obj/drawing_desk.obj";
+//        path = string("/Users/ambling/Documents/Dropbox/_Code/raytracer/")
+//                +"raytracer/obj/light_collection/fot01.obj";
     }
     
     

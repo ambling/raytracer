@@ -53,7 +53,6 @@ AmVec3f AmRayTracer::rayTracing(const AmRay &ray, const int depth)
         return color;
     }
     
-    AmVec3f addcolor(0,0,0);
     int minMesh = -1;
     
     //get the nearest hit point of the ray and the model
@@ -733,7 +732,7 @@ bool AmKDTree::hitBox(int index, const AmRay &ray, float &tmin, float &tmax)
 		{
 			if(tmin < t1) tmin = t1;
 			if(tmax > t2) tmax = t2;
-			if(tmax - tmin < -EPSILON) return 0;
+			if(tmax - tmin < -EPSILON) return false;
 		}
 		else
 		{

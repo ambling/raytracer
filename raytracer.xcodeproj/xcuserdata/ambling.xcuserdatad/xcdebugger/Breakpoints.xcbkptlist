@@ -8,11 +8,11 @@
          ignoreCount = "0"
          continueAfterRunningActions = "No"
          filePath = "raytracer/model.cpp"
-         timestampString = "388829223.220203"
+         timestampString = "388952698.91493"
          startingColumnNumber = "9223372036854775807"
          endingColumnNumber = "9223372036854775807"
-         startingLineNumber = "61"
-         endingLineNumber = "61"
+         startingLineNumber = "90"
+         endingLineNumber = "90"
          landmarkName = "AmModel::pass(ifstream &amp;ifs)"
          landmarkType = "5">
       </FileBreakpoint>
@@ -73,11 +73,11 @@
          ignoreCount = "0"
          continueAfterRunningActions = "No"
          filePath = "raytracer/model.cpp"
-         timestampString = "388949054.478883"
+         timestampString = "388952207.704002"
          startingColumnNumber = "9223372036854775807"
          endingColumnNumber = "9223372036854775807"
-         startingLineNumber = "478"
-         endingLineNumber = "478"
+         startingLineNumber = "510"
+         endingLineNumber = "510"
          landmarkName = "AmModel::utilize()"
          landmarkType = "5">
       </FileBreakpoint>
@@ -112,11 +112,11 @@
          ignoreCount = "0"
          continueAfterRunningActions = "No"
          filePath = "raytracer/raytracer.cpp"
-         timestampString = "388949233.63353"
+         timestampString = "388956228.220442"
          startingColumnNumber = "9223372036854775807"
          endingColumnNumber = "9223372036854775807"
-         startingLineNumber = "60"
-         endingLineNumber = "60"
+         startingLineNumber = "59"
+         endingLineNumber = "59"
          landmarkName = "AmRayTracer::rayTracing(const AmRay &amp;ray, const int depth)"
          landmarkType = "5">
       </FileBreakpoint>
@@ -125,11 +125,11 @@
          ignoreCount = "0"
          continueAfterRunningActions = "No"
          filePath = "raytracer/raytracer.cpp"
-         timestampString = "388949233.63353"
+         timestampString = "388956228.220442"
          startingColumnNumber = "9223372036854775807"
          endingColumnNumber = "9223372036854775807"
-         startingLineNumber = "143"
-         endingLineNumber = "143"
+         startingLineNumber = "142"
+         endingLineNumber = "142"
          landmarkName = "AmRayTracer::getHitPoint(const AmRay &amp;ray, int &amp;index)"
          landmarkType = "5">
       </FileBreakpoint>
@@ -164,11 +164,11 @@
          ignoreCount = "0"
          continueAfterRunningActions = "No"
          filePath = "raytracer/raytracer.cpp"
-         timestampString = "388949233.63353"
+         timestampString = "388956228.220442"
          startingColumnNumber = "9223372036854775807"
          endingColumnNumber = "9223372036854775807"
-         startingLineNumber = "152"
-         endingLineNumber = "152"
+         startingLineNumber = "151"
+         endingLineNumber = "151"
          landmarkName = "AmRayTracer::getHitPoint(const AmRay &amp;ray, int &amp;index)"
          landmarkType = "5">
       </FileBreakpoint>

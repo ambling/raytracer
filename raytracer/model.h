@@ -67,7 +67,7 @@ namespace raytracer {
             shininess(65.0),
             transperancy(1),
             density(1.0),
-            name("__AM_FIRST_BLANK_MATERIAL__")
+            name("__AM_FIRST_BLANK_MATERIAL__") // never used in real scene
         {}
         
         AmMaterial(string n)
@@ -137,10 +137,10 @@ namespace raytracer {
     public:
         AmModel(string pathname);
         
+        void readOBJ(string filename);
         void utilize();
 
     private:
-        void readOBJ(string filename);
         void pass(ifstream &ifs);
         unsigned int findMaterial(string name);
         unsigned int findGroup(string name);

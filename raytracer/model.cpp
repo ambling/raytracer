@@ -28,6 +28,12 @@ using namespace raytracer;
 AmModel::AmModel(string filename)
     :mPathname(filename)
 {
+    readOBJ(filename);
+}
+
+// read wavefront obj file
+void AmModel::readOBJ(string filename)
+{
     /* open the file */
     ifstream ifs(filename);
     assert(ifs);
@@ -50,14 +56,37 @@ void AmModel::pass(ifstream &ifs)
     unsigned int material;           /* current material */
     unsigned int group;              /* current group */
     
-    // pass through the file, read all the data
-    numvertices = numnormals = numtexcoords = 1;//indices begin with 1
-    mVertices.push_back(AmVec3f(0,0,0));
-    mTexcoords.push_back(AmVec2f(0,0));
-    mNormals.push_back(AmVec3f(0,0,0));
-    numtriangles = 0;
-    material = group = 0;
+    // index start from 1, leave the first one as blank
+    numvertices = static_cast<unsigned int>(mVertices.size());
+    if (numvertices == 0) {
+        mVertices.push_back(AmVec3f(0,0,0));
+    } else {
+        numvertices --; // base index
+    }
+    numnormals = static_cast<unsigned int>(mNormals.size());
+    if (numnormals == 0) {
+        mNormals.push_back(AmVec3f(0,0,0));
+    } else {
+        numnormals --; // base index
+    }
+    numtexcoords = static_cast<unsigned int>(mTexcoords.size());
+    if (numtexcoords == 0) {
+        mTexcoords.push_back(AmVec2f(0,0));
+    } else {
+        numtexcoords --; // base index
+    }
     
+    // triangle starts from 0...
+    numtriangles = static_cast<unsigned int>(mTriangles.size());
+    
+    // group index starts from 0, while material index starts from 1
+    material = group = 0;
+    // index from 1
+    if (mMaterials.size() == 0) {
+        mMaterials.push_back(AmMaterial());//first one of blank material
+    }
+    
+    // pass through the file, read all the data
     while(!ifs.eof()) {
         char buf[128];
         ifs.getline(buf, 128);
@@ -78,20 +107,17 @@ void AmModel::pass(ifstream &ifs)
                             >>vec3f.mData[1]
                             >>vec3f.mData[2];
                     mVertices.push_back(vec3f);
-                    numvertices++;
                 } else if(first == "vn") {
                     /* normal */
                     sreader>>vec3f.mData[0]
                             >>vec3f.mData[1]
                             >>vec3f.mData[2];
                     mNormals.push_back(vec3f);
-                    numnormals++;
                 } else if(first == "vt"){
                     /* texcoord */
                     sreader>>vec2f.mData[0]
                             >>vec2f.mData[1];
                     mTexcoords.push_back(vec2f);
-                    numtexcoords++;
                 }
                 break;
             case 'm':
@@ -117,20 +143,20 @@ void AmModel::pass(ifstream &ifs)
                 if (sscanf(remain.c_str(), "%d//%d", &v, &n) == 2) {
                     /* v//n */
                     assert(v>0);assert(n>0);//do not accept negative indices
-                    triangle.vindices[0] = v;
-                    triangle.nindices[0] = n;
+                    triangle.vindices[0] = v+numvertices;
+                    triangle.nindices[0] = n+numnormals;
                     
                     sreader>>remain;
                     sscanf(remain.c_str(), "%d//%d", &v, &n);
                     assert(v>0);assert(n>0);//do not accept negative indices
-                    triangle.vindices[1] = v;
-                    triangle.nindices[1] = n;
+                    triangle.vindices[1] = v+numvertices;
+                    triangle.nindices[1] = n+numnormals;
                     
                     sreader>>remain;
                     sscanf(remain.c_str(), "%d//%d", &v, &n);
                     assert(v>0);assert(n>0);//do not accept negative indices
-                    triangle.vindices[2] = v;
-                    triangle.nindices[2] = n;
+                    triangle.vindices[2] = v+numvertices;
+                    triangle.nindices[2] = n+numnormals;
                     
                     mTriangles.push_back(triangle);
                     mGroups[group].triangles.push_back(numtriangles);
@@ -144,8 +170,8 @@ void AmModel::pass(ifstream &ifs)
                         nextTri.nindices[0] = triangle.nindices[0];
                         nextTri.vindices[1] = triangle.vindices[2];
                         nextTri.nindices[1] = triangle.nindices[2];
-                        nextTri.vindices[2] = v;
-                        nextTri.nindices[2] = n;
+                        nextTri.vindices[2] = v+numvertices;
+                        nextTri.nindices[2] = n+numnormals;
                         
                         mTriangles.push_back(nextTri);
                         mGroups[group].triangles.push_back(numtriangles);
@@ -156,25 +182,25 @@ void AmModel::pass(ifstream &ifs)
                     /* v/t/n */
                     //do not accept negative indices
                     assert(v>0);assert(t>0);assert(n>0);
-                    triangle.vindices[0] = v;
-                    triangle.tindices[0] = t;
-                    triangle.nindices[0] = n;
+                    triangle.vindices[0] = v+numvertices;
+                    triangle.tindices[0] = t+numtexcoords;
+                    triangle.nindices[0] = n+numnormals;
                     
                     sreader>>remain;
                     sscanf(remain.c_str(), "%d/%d/%d", &v, &t, &n);
                     //do not accept negative indices
                     assert(v>0);assert(t>0);assert(n>0);
-                    triangle.vindices[1] = v;
-                    triangle.tindices[1] = t;
-                    triangle.nindices[1] = n;
+                    triangle.vindices[1] = v+numvertices;
+                    triangle.tindices[1] = t+numtexcoords;
+                    triangle.nindices[1] = n+numnormals;
                     
                     sreader>>remain;
                     sscanf(remain.c_str(), "%d/%d/%d", &v, &t, &n);
                     //do not accept negative indices
                     assert(v>0);assert(t>0);assert(n>0);
-                    triangle.vindices[2] = v;
-                    triangle.tindices[2] = t;
-                    triangle.nindices[2] = n;
+                    triangle.vindices[2] = v+numvertices;
+                    triangle.tindices[2] = t+numtexcoords;
+                    triangle.nindices[2] = n+numnormals;
                     
                     mTriangles.push_back(triangle);
                     mGroups[group].triangles.push_back(numtriangles);
@@ -192,9 +218,9 @@ void AmModel::pass(ifstream &ifs)
                         nextTri.vindices[1] = triangle.vindices[2];
                         nextTri.tindices[1] = triangle.tindices[2];
                         nextTri.nindices[1] = triangle.nindices[2];
-                        nextTri.vindices[2] = v;
-                        nextTri.tindices[2] = t;
-                        nextTri.nindices[2] = n;
+                        nextTri.vindices[2] = v+numvertices;
+                        nextTri.tindices[2] = t+numtexcoords;
+                        nextTri.nindices[2] = n+numnormals;
                         
                         mTriangles.push_back(nextTri);
                         mGroups[group].triangles.push_back(numtriangles);
@@ -204,20 +230,20 @@ void AmModel::pass(ifstream &ifs)
                 } else if (sscanf(remain.c_str(), "%d/%d", &v, &t) == 2) {
                     /* v/t */
                     assert(v>0);assert(t>0);//do not accept negative indices
-                    triangle.vindices[0] = v;
-                    triangle.tindices[0] = t;
+                    triangle.vindices[0] = v+numvertices;
+                    triangle.tindices[0] = t+numtexcoords;
                     
                     sreader>>remain;
                     sscanf(remain.c_str(), "%d/%d", &v, &t);
                     assert(v>0);assert(t>0);//do not accept negative indices
-                    triangle.vindices[1] = v;
-                    triangle.tindices[1] = t;
+                    triangle.vindices[1] = v+numvertices;
+                    triangle.tindices[1] = t+numtexcoords;
                     
                     sreader>>remain;
                     sscanf(remain.c_str(), "%d/%d", &v, &t);
                     assert(v>0);assert(t>0);//do not accept negative indices
-                    triangle.vindices[2] = v;
-                    triangle.tindices[2] = t;
+                    triangle.vindices[2] = v+numvertices;
+                    triangle.tindices[2] = t+numtexcoords;
                     
                     mTriangles.push_back(triangle);
                     mGroups[group].triangles.push_back(numtriangles);
@@ -231,8 +257,8 @@ void AmModel::pass(ifstream &ifs)
                         nextTri.tindices[0] = triangle.tindices[0];
                         nextTri.vindices[1] = triangle.vindices[2];
                         nextTri.tindices[1] = triangle.tindices[2];
-                        nextTri.vindices[2] = v;
-                        nextTri.tindices[2] = t;
+                        nextTri.vindices[2] = v+numvertices;
+                        nextTri.tindices[2] = t+numtexcoords;
                         
                         mTriangles.push_back(nextTri);
                         mGroups[group].triangles.push_back(numtriangles);
@@ -244,17 +270,17 @@ void AmModel::pass(ifstream &ifs)
                     /* v */
                     sscanf(remain.c_str(), "%d", &v);
                     assert(v>0);//do not accept negative indices
-                    triangle.vindices[0] = v;
+                    triangle.vindices[0] = v+numvertices;
                     
                     sreader>>remain;
                     sscanf(remain.c_str(), "%d", &v);
                     assert(v>0);//do not accept negative indices
-                    triangle.vindices[1] = v;
+                    triangle.vindices[1] = v+numvertices;
                     
                     sreader>>remain;
                     sscanf(remain.c_str(), "%d", &v);
                     assert(v>0);//do not accept negative indices
-                    triangle.vindices[2] = v;
+                    triangle.vindices[2] = v+numvertices;
                     
                     mTriangles.push_back(triangle);
                     mGroups[group].triangles.push_back(numtriangles);
@@ -266,7 +292,7 @@ void AmModel::pass(ifstream &ifs)
                         assert(v>0);//do not accept negative indices
                         nextTri.vindices[0] = triangle.vindices[0];
                         nextTri.vindices[1] = triangle.vindices[2];
-                        nextTri.vindices[2] = v;
+                        nextTri.vindices[2] = v+numvertices;
                         
                         mTriangles.push_back(nextTri);
                         mGroups[group].triangles.push_back(numtriangles);
@@ -302,6 +328,7 @@ unsigned int AmModel::findMaterial(string name)
  */
 unsigned int AmModel::findGroup(string name)
 {
+    // group index starts from 0
     for (int i = 0; i < mGroups.size(); i++) {
         if (mGroups[i].name == name) {
             return i;
@@ -334,9 +361,6 @@ void AmModel::readMTL()
     
     
     /* now, read in the data */
-    if (mMaterials.size() == 0) {
-        mMaterials.push_back(AmMaterial());//first one of blank material
-    }
     unsigned long material = mMaterials.size()-1; //current material index
     while(!ifs.eof()) {
         char buf[128];
@@ -356,8 +380,10 @@ void AmModel::readMTL()
                 sreader>>first>>mMaterials[material].transperancy;
                 break;
             case 'T':
-                // transperancy
-                sreader>>first>>mMaterials[material].transperancy;
+                if (buf[1] == 'r') {
+                    // transperancy
+                    sreader>>first>>mMaterials[material].transperancy;
+                }
                 break;
             case 'N':
             {
@@ -400,6 +426,12 @@ void AmModel::readMTL()
                                 >>mMaterials[material].ambient[0]
                                 >>mMaterials[material].ambient[1]
                                 >>mMaterials[material].ambient[2];
+                        break;
+                    case 'e':
+                        sreader>>first
+                                >>mMaterials[material].emmissive[0]
+                                >>mMaterials[material].emmissive[1]
+                                >>mMaterials[material].emmissive[2];
                         break;
                     default:
                         break;

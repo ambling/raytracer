@@ -61,7 +61,7 @@ namespace raytracer
         camera = AmCameraPtr(new AmCamera(mWidth, mHeight, eye, center, up));
         
         
-        float light_position[] = { 1.0, 0.0, 0.0, 0.0 };
+        float light_position[] = { 1.0, 0.0, 2.0, 0.0 };
         float light_ambient[] = { 1.0, 1.0, 1.0, 1.0 };
         lights.push_back(AmLightPtr(new AmLight(
                             AmLight::AM_POSITION,
@@ -271,10 +271,14 @@ namespace raytracer
         
         if (key == 'a')
         {// move left
+            camera->eye = camera->eye - AmVec3f(step, 0, 0);
+            camera->update();
         }
         
         if (key == 'd')
         {// move right
+            camera->eye = camera->eye + AmVec3f(step, 0, 0);
+            camera->update();
         }
     }
     
